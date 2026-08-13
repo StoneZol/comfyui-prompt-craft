@@ -1,0 +1,7 @@
+{
+  "extension_name": "prompt.craft",
+  "node_class": "PromptCraft",
+  "node_display_name": "Prompt Craft",
+  "style_id": "prompt-craft-styles",
+  "log_prefix": "[PromptCraft]"
+}

@@ -1,0 +1,79 @@
+"""Prompt Craft — stack prompt groups and join positive / negative strings."""
+
+import json
+import re
+
+DEFAULT_SEPARATOR = ", "
+
+
+def _normalize_prompt(text: str) -> str:
+    if not text:
+        return ""
+    s = str(text).strip()
+    s = re.sub(r"[ \t\r\n]+", " ", s)
+    s = re.sub(r"\s*,\s*", ", ", s)
+    s = re.sub(r"(,\s*){2,}", ", ", s)
+    s = s.strip(" ,")
+    s = re.sub(r"\.{4,}", "...", s)
+    s = re.sub(r"(?<!\.)\.\.(?!\.)", ".", s)
+    s = re.sub(r"!{2,}", "!", s)
+    s = re.sub(r"\?{2,}", "?", s)
+    return s.strip()
+
+
+def _join_fields(parts, separator: str) -> str:
+    chunks = []
+    for part in parts:
+        cleaned = _normalize_prompt(part)
+        if cleaned:
+            chunks.append(cleaned)
+    if not chunks:
+        return ""
+    return _normalize_prompt(separator.join(chunks))
+
+
+def _parse_blocks(raw) -> list:
+    if not raw:
+        return []
+    try:
+        data = json.loads(raw) if isinstance(raw, str) else raw
+    except Exception:
+        return []
+    return data if isinstance(data, list) else []
+
+
+class PromptCraft:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "hidden": {
+                "blocks_data": ("STRING", {"default": "[]"}),
+            },
+        }
+
+    RETURN_TYPES = ("STRING", "STRING")
+    RETURN_NAMES = ("str_pos", "str_neg")
+    FUNCTION = "craft"
+    CATEGORY = "prompt_craft"
+
+    @classmethod
+    def IS_CHANGED(cls, blocks_data, **kwargs):
+        return blocks_data
+
+    def craft(self, blocks_data, **kwargs):
+        blocks = _parse_blocks(blocks_data)
+        positives = [block.get("positive", "") for block in blocks]
+        negatives = [block.get("negative", "") for block in blocks]
+        return (
+            _join_fields(positives, DEFAULT_SEPARATOR),
+            _join_fields(negatives, DEFAULT_SEPARATOR),
+        )
+
+
+NODE_CLASS_MAPPINGS = {
+    "PromptCraft": PromptCraft,
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "PromptCraft": "Prompt Craft",
+}

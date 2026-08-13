@@ -1,0 +1,15 @@
+[project]
+name = "comfyui-prompt-craft"
+description = "ComfyUI node that stacks prompt groups (title + positive + negative) and joins them into two strings."
+version = "0.1.0"
+license = { file = "LICENSE" }
+requires-python = ">=3.8"
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/StoneZol/comfyui-prompt-craft"
+
+[tool.comfy]
+PublisherId = "stone-zol"
+DisplayName = "Prompt Craft"
+Icon = ""
