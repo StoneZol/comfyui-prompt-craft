@@ -38,6 +38,10 @@ const CSS = `
   border-color: var(--descrip-text, #888);
 }
 
+.pc-title-input.invalid {
+  border-color: #c0392b;
+}
+
 .pc-add-btn {
   flex: 1 1 auto;
   width: 100%;
@@ -112,6 +116,54 @@ const CSS = `
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.pc-group-head .pc-title-input {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.pc-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pc-group.collapsed .pc-group-body {
+  display: none;
+}
+
+.pc-collapse-btn {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--descrip-text, #888);
+  cursor: pointer;
+  padding: 0;
+}
+
+.pc-collapse-btn:hover {
+  color: var(--input-text, #ddd);
+  background: var(--comfy-input-bg, #2a2a2e);
+  border-color: var(--border-color, #444);
+}
+
+.pc-collapse-btn svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  transition: transform 0.15s ease;
+}
+
+.pc-group.collapsed .pc-collapse-btn svg {
+  transform: rotate(-90deg);
 }
 
 .pc-remove-btn {

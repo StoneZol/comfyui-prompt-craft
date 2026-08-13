@@ -48,6 +48,17 @@ function stampLabels(title) {
   };
 }
 
+function groupTitleError(groups, title, exceptId) {
+  const name = (title || "").trim();
+  if (!name) return "Name is required";
+  const key = name.toLowerCase();
+  const taken = groups.some(
+    (group) => group.id !== exceptId && (group.title || "").trim().toLowerCase() === key,
+  );
+  if (taken) return "Name already used";
+  return "";
+}
+
 function hideDataWidget(widget) {
   if (!widget) return;
   widget.hidden = true;
@@ -240,6 +251,7 @@ app.registerExtension({
             onChange: persist,
             onRemove: () => removeGroup(group.id),
             onPrompt: (key, value) => writeShadow(group, key, value),
+            onRename: (name) => groupTitleError(groups, name, group.id),
           });
           cards.set(group.id, card);
           groupsWrap.appendChild(card.el);
@@ -259,7 +271,9 @@ app.registerExtension({
       }
 
       function addGroup(title) {
-        const name = (title || "").trim() || "Group";
+        const error = groupTitleError(groups, title);
+        if (error) return error;
+        const name = title.trim();
         const group = {
           id: newGroupId(),
           title: name,
@@ -273,6 +287,7 @@ app.registerExtension({
         renderCards();
         resizeNode();
         hideDataWidget(dataWidget);
+        return "";
       }
 
       function removeGroup(id) {
@@ -292,6 +307,7 @@ app.registerExtension({
           title: "Add group",
           placeholder: "pair name",
           confirmLabel: "Add",
+          validate: (value) => groupTitleError(groups, value),
           onSubmit: (value) => addGroup(value),
         });
       });

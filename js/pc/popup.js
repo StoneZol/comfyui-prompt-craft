@@ -49,6 +49,17 @@ const CSS = `
   border-color: var(--descrip-text, #888);
 }
 
+.pc-popup-input.invalid {
+  border-color: #c0392b;
+}
+
+.pc-popup-error {
+  min-height: 14px;
+  padding: 0 2px;
+  color: #ff8a80;
+  font-size: 11px;
+}
+
 .pc-popup-actions {
   display: flex;
   justify-content: flex-end;
@@ -78,6 +89,18 @@ const CSS = `
   background: #2f2b3d;
   border-color: #6d5aa8;
   color: #e8e4f5;
+}
+
+.pc-popup-btn.danger {
+  background: #3a2323;
+  border-color: #c0392b;
+  color: #ff8a80;
+}
+
+.pc-popup-message {
+  padding: 2px 4px 0;
+  line-height: 1.4;
+  color: var(--input-text, #ddd);
 }
 `;
 
@@ -195,6 +218,7 @@ export function openInputPopup({
   placeholder = "",
   confirmLabel = "Add",
   initialValue = "",
+  validate,
   onSubmit,
 } = {}) {
   return openPopup({
@@ -209,6 +233,9 @@ export function openInputPopup({
       input.placeholder = placeholder;
       input.value = initialValue;
 
+      const errorEl = document.createElement("div");
+      errorEl.className = "pc-popup-error";
+
       const actions = document.createElement("div");
       actions.className = "pc-popup-actions";
 
@@ -217,8 +244,19 @@ export function openInputPopup({
       confirm.className = "pc-popup-btn primary";
       confirm.textContent = confirmLabel;
 
+      function showError(message) {
+        errorEl.textContent = message || "";
+        input.classList.toggle("invalid", !!message);
+      }
+
       function submit() {
         const value = input.value.trim();
+        const error = validate?.(value);
+        if (error) {
+          showError(error);
+          input.focus();
+          return;
+        }
         close();
         onSubmit?.(value);
       }
@@ -226,6 +264,9 @@ export function openInputPopup({
       confirm.addEventListener("click", (e) => {
         e.stopPropagation();
         submit();
+      });
+      input.addEventListener("input", () => {
+        if (errorEl.textContent) showError("");
       });
       input.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
@@ -235,8 +276,60 @@ export function openInputPopup({
       });
 
       actions.appendChild(confirm);
-      body.append(input, actions);
+      body.append(input, errorEl, actions);
       requestAnimationFrame(() => input.focus());
+    },
+  });
+}
+
+/**
+ * Confirm / cancel prompt built on openPopup.
+ */
+export function openConfirmPopup({
+  anchor,
+  position,
+  title = "Confirm",
+  message = "",
+  confirmLabel = "Delete",
+  cancelLabel = "Cancel",
+  danger = true,
+  onConfirm,
+} = {}) {
+  return openPopup({
+    anchor,
+    position,
+    title,
+    width: 280,
+    render(body, { close }) {
+      const text = document.createElement("div");
+      text.className = "pc-popup-message";
+      text.textContent = message;
+
+      const actions = document.createElement("div");
+      actions.className = "pc-popup-actions";
+
+      const cancel = document.createElement("button");
+      cancel.type = "button";
+      cancel.className = "pc-popup-btn";
+      cancel.textContent = cancelLabel;
+      cancel.addEventListener("click", (e) => {
+        e.stopPropagation();
+        close();
+      });
+
+      const confirm = document.createElement("button");
+      confirm.type = "button";
+      confirm.className = `pc-popup-btn ${danger ? "danger" : "primary"}`;
+      confirm.textContent = confirmLabel;
+      confirm.addEventListener("click", (e) => {
+        e.stopPropagation();
+        close();
+        onConfirm?.();
+      });
+
+      actions.append(cancel, confirm);
+      body.append(text, actions);
+      requestAnimationFrame(() => confirm.focus());
     },
   });
 }
