@@ -6,6 +6,8 @@ import { makeGroupCard } from "./pc/group_card.js";
 import { openInputPopup } from "./pc/popup.js";
 import { openSavePresetsPopup } from "./pc/save_dialog.js";
 import { confirmReplaceGroups, openLoadPresetPopup } from "./pc/load_dialog.js";
+import { openSavePairPopup } from "./pc/pair_save.js";
+import { confirmReplacePair, openLoadPairPopup } from "./pc/pair_load.js";
 import {
   createShadowString,
   hideOnCanvasKeepInPanel,
@@ -317,6 +319,29 @@ app.registerExtension({
             onRename: (name) => groupTitleError(groups, name, group.id),
             onReorder: reorderGroup,
             onDrop: dropGroup,
+            onSavePair: (anchor) => openSavePairPopup({ anchor, group }),
+            onLoadPair: (anchor) => {
+              openLoadPairPopup({
+                anchor,
+                category: group.title,
+                onPick: (preset) => {
+                  const apply = () => {
+                    group.positive = preset.positive || "";
+                    group.negative = preset.negative || "";
+                    card.setField("positive", group.positive);
+                    card.setField("negative", group.negative);
+                    writeShadow(group, "positive", group.positive);
+                    writeShadow(group, "negative", group.negative);
+                    persist();
+                  };
+                  if ((group.positive || "").trim() || (group.negative || "").trim()) {
+                    confirmReplacePair({ anchor, onConfirm: apply });
+                    return;
+                  }
+                  apply();
+                },
+              });
+            },
           });
           cards.set(group.id, card);
           groupsWrap.appendChild(card.el);

@@ -155,6 +155,86 @@ const CSS = `
   line-height: 1.4;
 }
 
+.pc-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px;
+  color: var(--descrip-text, #aaa);
+  font-size: 11px;
+  user-select: none;
+}
+
+.pc-preset-peek {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--descrip-text, #888);
+  cursor: pointer;
+  padding: 0;
+}
+
+.pc-preset-peek:hover {
+  color: var(--input-text, #ddd);
+  background: var(--comfy-menu-bg, #1e1e1e);
+  border-color: var(--border-color, #444);
+}
+
+.pc-preset-peek svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.pc-prompt-tip {
+  position: fixed;
+  z-index: 12000;
+  max-width: min(360px, calc(100vw - 16px));
+  max-height: min(50vh, 360px);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #555);
+  background: #1c1c1f;
+  color: var(--input-text, #ddd);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+  pointer-events: auto;
+}
+
+.pc-prompt-tip-label {
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  margin-top: 6px;
+}
+
+.pc-prompt-tip-label:first-child {
+  margin-top: 0;
+}
+
+.pc-prompt-tip-pos {
+  color: #6bbf7a;
+}
+
+.pc-prompt-tip-neg {
+  color: #e07070;
+}
+
+.pc-prompt-tip-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--input-text, #ddd);
+}
+
 .pc-save-folder-row {
   display: flex;
   align-items: center;
@@ -384,10 +464,11 @@ function placePopup(el, { anchor, position }) {
   const margin = 8;
   let x = position?.x ?? 0;
   let y = position?.y ?? 0;
+  let anchorRect = null;
   if (anchor?.getBoundingClientRect) {
-    const rect = anchor.getBoundingClientRect();
-    x = rect.left;
-    y = rect.bottom + 4;
+    anchorRect = anchor.getBoundingClientRect();
+    x = anchorRect.left;
+    y = anchorRect.bottom + 4;
   }
 
   el.style.left = `${x}px`;
@@ -396,6 +477,8 @@ function placePopup(el, { anchor, position }) {
   document.body.appendChild(el);
 
   const box = el.getBoundingClientRect();
+  // Right-align to the button so dialogs open leftward, not past the right edge.
+  if (anchorRect) x = anchorRect.right - box.width;
   const maxX = window.innerWidth - box.width - margin;
   const maxY = window.innerHeight - box.height - margin;
   el.style.left = `${Math.max(margin, Math.min(x, maxX))}px`;
@@ -457,6 +540,7 @@ export function openPopup(opts) {
 
   function onDocDown(e) {
     if (popupStack[popupStack.length - 1] !== api) return;
+    if (e.target?.closest?.(".pc-prompt-tip")) return;
     if (root.contains(e.target) || e.target === opts.anchor) return;
     const inStack = popupStack.some((item) => item.root.contains(e.target));
     if (inStack) {

@@ -145,6 +145,11 @@ const CSS = `
   min-height: 28px;
 }
 
+.pc-group-toolbar-spacer {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .pc-group-head {
   display: flex;
   align-items: center;
@@ -321,6 +326,36 @@ const CSS = `
 }
 
 .pc-remove-btn svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.pc-pair-save-btn,
+.pc-pair-load-btn {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--descrip-text, #888);
+  cursor: pointer;
+  padding: 0;
+}
+
+.pc-pair-save-btn:hover,
+.pc-pair-load-btn:hover {
+  color: var(--input-text, #ddd);
+  background: var(--comfy-input-bg, #2a2a2e);
+  border-color: var(--border-color, #444);
+}
+
+.pc-pair-save-btn svg,
+.pc-pair-load-btn svg {
   width: 14px;
   height: 14px;
   display: block;

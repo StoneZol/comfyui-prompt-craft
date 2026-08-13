@@ -79,6 +79,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
         )
     conn.execute("CREATE INDEX IF NOT EXISTS idx_layouts_folder_id ON layouts(folder_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_layouts_name ON layouts(name)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_presets_category_id ON presets(category_id)")
 
 
 def init_db() -> None:
@@ -251,6 +252,141 @@ def list_layouts() -> Dict:
                 """
             ).fetchall()
             return {"ok": True, "layouts": [_layout_row(row) for row in rows]}
+        finally:
+            conn.close()
+
+
+def _preset_row(row: sqlite3.Row) -> Dict:
+    return {
+        "id": int(row["id"]),
+        "title": row["title"],
+        "description": row["description"] or "",
+        "positive": row["positive"] or "",
+        "negative": row["negative"] or "",
+        "category": row["category"] or "",
+    }
+
+
+def save_preset(
+    category: str,
+    title: str,
+    description: str = "",
+    positive: str = "",
+    negative: str = "",
+    overwrite: bool = False,
+) -> Dict:
+    shelf = (category or "").strip()
+    name = (title or "").strip()
+    pos = positive or ""
+    neg = negative or ""
+    if not shelf:
+        return {"ok": False, "error": "Name the pair first"}
+    if not name:
+        return {"ok": False, "error": "Name is required"}
+    if not pos.strip() and not neg.strip():
+        return {"ok": False, "error": "Write a prompt first"}
+
+    with _lock:
+        conn = _connect()
+        try:
+            conn.execute("BEGIN")
+            category_id, _created = _get_or_create_category(conn, shelf)
+            existing = conn.execute(
+                """
+                SELECT id FROM presets
+                WHERE category_id = ? AND title = ? COLLATE NOCASE
+                """,
+                (category_id, name),
+            ).fetchone()
+            if existing and not overwrite:
+                conn.rollback()
+                return {"ok": False, "conflicts": [{"name": name, "category": shelf}]}
+
+            note = (description or "").strip()
+            if existing:
+                conn.execute(
+                    """
+                    UPDATE presets
+                    SET description = ?, positive = ?, negative = ?, updated_at = datetime('now')
+                    WHERE id = ?
+                    """,
+                    (note, pos, neg, int(existing["id"])),
+                )
+            else:
+                conn.execute(
+                    """
+                    INSERT INTO presets (category_id, title, description, positive, negative)
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (category_id, name, note, pos, neg),
+                )
+            conn.commit()
+            return {
+                "ok": True,
+                "title": name,
+                "category": shelf,
+            }
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+
+def list_presets(category: str = "") -> Dict:
+    shelf = (category or "").strip()
+    with _lock:
+        conn = _connect()
+        try:
+            if shelf:
+                rows = conn.execute(
+                    """
+                    SELECT
+                        presets.id,
+                        presets.title,
+                        presets.description,
+                        presets.positive,
+                        presets.negative,
+                        categories.name AS category
+                    FROM presets
+                    JOIN categories ON categories.id = presets.category_id
+                    WHERE categories.name = ? COLLATE NOCASE
+                    ORDER BY presets.title COLLATE NOCASE
+                    """,
+                    (shelf,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """
+                    SELECT
+                        presets.id,
+                        presets.title,
+                        presets.description,
+                        presets.positive,
+                        presets.negative,
+                        categories.name AS category
+                    FROM presets
+                    JOIN categories ON categories.id = presets.category_id
+                    ORDER BY categories.name COLLATE NOCASE, presets.title COLLATE NOCASE
+                    """
+                ).fetchall()
+            return {"ok": True, "presets": [_preset_row(row) for row in rows]}
+        finally:
+            conn.close()
+
+
+def list_categories() -> Dict:
+    with _lock:
+        conn = _connect()
+        try:
+            rows = conn.execute(
+                """
+                SELECT name
+                FROM categories
+                ORDER BY name COLLATE NOCASE
+                """
+            ).fetchall()
+            return {"ok": True, "categories": [row["name"] for row in rows]}
         finally:
             conn.close()
 

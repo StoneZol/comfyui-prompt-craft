@@ -1,4 +1,4 @@
-import { CHEVRON_ICON_SVG, GRIP_ICON_SVG, TRASH_ICON_SVG } from "./icons.js";
+import { CHEVRON_ICON_SVG, GRIP_ICON_SVG, LOAD_ICON_SVG, SAVE_ICON_SVG, TRASH_ICON_SVG } from "./icons.js";
 import { openConfirmPopup } from "./popup.js";
 
 function isEnabled(group) {
@@ -28,7 +28,7 @@ function makeField(group, key, labelText, { onChange, onPrompt }) {
   return { wrap, area };
 }
 
-export function makeGroupCard(group, { index = 0, onChange, onRemove, onPrompt, onRename, onReorder, onDrop }) {
+export function makeGroupCard(group, { index = 0, onChange, onRemove, onPrompt, onRename, onReorder, onDrop, onSavePair, onLoadPair }) {
   const card = document.createElement("div");
   card.className = "pc-group";
   card.dataset.groupId = group.id;
@@ -190,6 +190,31 @@ export function makeGroupCard(group, { index = 0, onChange, onRemove, onPrompt, 
     });
   });
   toolbar.appendChild(removeBtn);
+
+  const spacer = document.createElement("div");
+  spacer.className = "pc-group-toolbar-spacer";
+
+  const savePairBtn = document.createElement("button");
+  savePairBtn.type = "button";
+  savePairBtn.className = "pc-pair-save-btn";
+  savePairBtn.title = "Save pair";
+  savePairBtn.innerHTML = SAVE_ICON_SVG;
+  savePairBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    onSavePair?.(savePairBtn);
+  });
+
+  const loadPairBtn = document.createElement("button");
+  loadPairBtn.type = "button";
+  loadPairBtn.className = "pc-pair-load-btn";
+  loadPairBtn.title = "Load pair";
+  loadPairBtn.innerHTML = LOAD_ICON_SVG;
+  loadPairBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    onLoadPair?.(loadPairBtn);
+  });
+
+  toolbar.append(spacer, savePairBtn, loadPairBtn);
 
   const pos = makeField(group, "positive", "positive", { onChange, onPrompt });
   const neg = makeField(group, "negative", "negative", { onChange, onPrompt });
