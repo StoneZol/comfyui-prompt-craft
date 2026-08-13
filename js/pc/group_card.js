@@ -1,12 +1,16 @@
-import { CHEVRON_ICON_SVG, TRASH_ICON_SVG } from "./icons.js";
+import { CHEVRON_ICON_SVG, GRIP_ICON_SVG, TRASH_ICON_SVG } from "./icons.js";
 import { openConfirmPopup } from "./popup.js";
+
+function isEnabled(group) {
+  return group.enabled !== false;
+}
 
 function makeField(group, key, labelText, { onChange, onPrompt }) {
   const wrap = document.createElement("div");
   wrap.className = "pc-field";
 
   const label = document.createElement("div");
-  label.className = "pc-field-label";
+  label.className = `pc-field-label pc-field-label-${key}`;
   label.textContent = labelText;
 
   const area = document.createElement("textarea");
@@ -24,14 +28,80 @@ function makeField(group, key, labelText, { onChange, onPrompt }) {
   return { wrap, area };
 }
 
-export function makeGroupCard(group, { onChange, onRemove, onPrompt, onRename }) {
+export function makeGroupCard(group, { index = 0, onChange, onRemove, onPrompt, onRename, onReorder, onDrop }) {
   const card = document.createElement("div");
   card.className = "pc-group";
   card.dataset.groupId = group.id;
   card.addEventListener("pointerdown", (e) => e.stopPropagation());
 
+  function applyEnabled() {
+    const on = isEnabled(group);
+    card.classList.toggle("is-off", !on);
+    toggle.className = "pc-toggle" + (on ? " on" : "");
+    toggle.title = on ? "Disable pair" : "Enable pair";
+  }
+
   const head = document.createElement("div");
   head.className = "pc-group-head";
+
+  const dragHandle = document.createElement("div");
+  dragHandle.className = "pc-drag-handle";
+  dragHandle.title = "Drag to reorder";
+  dragHandle.innerHTML = GRIP_ICON_SVG;
+  dragHandle.draggable = true;
+  dragHandle.addEventListener("dragstart", (e) => {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", group.id);
+    card.classList.add("dragging");
+  });
+  dragHandle.addEventListener("dragend", () => {
+    card.classList.remove("dragging");
+    card.parentElement?.querySelectorAll(".pc-group").forEach((el) => {
+      el.classList.remove("drop-above", "drop-below");
+    });
+  });
+
+  const priority = document.createElement("input");
+  priority.className = "pc-priority";
+  priority.type = "number";
+  priority.min = "1";
+  priority.step = "1";
+  priority.title = "Priority";
+  priority.value = String(index + 1);
+  priority.addEventListener("pointerdown", (e) => e.stopPropagation());
+
+  function commitPriority() {
+    const parsed = parseInt(priority.value, 10);
+    if (Number.isNaN(parsed)) {
+      priority.value = String(index + 1);
+      return;
+    }
+    onReorder?.(group.id, parsed - 1);
+  }
+
+  priority.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      priority.blur();
+    }
+    if (e.key === "Escape") {
+      priority.value = String(index + 1);
+      priority.blur();
+    }
+  });
+  priority.addEventListener("blur", commitPriority);
+
+  const toggle = document.createElement("div");
+  toggle.setAttribute("role", "switch");
+  const knob = document.createElement("div");
+  knob.className = "pc-toggle-knob";
+  toggle.appendChild(knob);
+  toggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    group.enabled = !isEnabled(group);
+    applyEnabled();
+    onChange?.();
+  });
 
   const title = document.createElement("input");
   title.className = "pc-title-input";
@@ -94,7 +164,7 @@ export function makeGroupCard(group, { onChange, onRemove, onPrompt, onRename })
     onChange?.();
   });
 
-  head.append(title, collapseBtn);
+  head.append(dragHandle, priority, toggle, title, collapseBtn);
 
   const body = document.createElement("div");
   body.className = "pc-group-body";
@@ -127,6 +197,27 @@ export function makeGroupCard(group, { onChange, onRemove, onPrompt, onRename })
   body.append(toolbar, pos.wrap, neg.wrap);
   card.append(head, body);
   applyCollapsed();
+  applyEnabled();
+
+  card.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    const rect = card.getBoundingClientRect();
+    const above = e.clientY < rect.top + rect.height / 2;
+    card.classList.toggle("drop-above", above);
+    card.classList.toggle("drop-below", !above);
+  });
+  card.addEventListener("dragleave", () => {
+    card.classList.remove("drop-above", "drop-below");
+  });
+  card.addEventListener("drop", (e) => {
+    e.preventDefault();
+    card.classList.remove("drop-above", "drop-below");
+    const fromId = e.dataTransfer.getData("text/plain");
+    if (!fromId || fromId === group.id) return;
+    const rect = card.getBoundingClientRect();
+    const after = e.clientY >= rect.top + rect.height / 2;
+    onDrop?.(fromId, group.id, after);
+  });
 
   return {
     el: card,

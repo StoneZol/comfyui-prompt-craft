@@ -23,3 +23,9 @@ export const LOAD_ICON_SVG = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/
   <path d="M4 20h16V8H4z"/>
   <path d="M4 8l4-4h5l2 2h5v2"/>
 </svg>`;
+
+export const GRIP_ICON_SVG = `<svg viewBox="0 0 10 16" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="2" cy="2" r="1.4"/><circle cx="8" cy="2" r="1.4"/>
+  <circle cx="2" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/>
+  <circle cx="2" cy="14" r="1.4"/><circle cx="8" cy="14" r="1.4"/>
+</svg>`;

@@ -157,6 +157,106 @@ const CSS = `
   min-width: 0;
 }
 
+.pc-drag-handle {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #777;
+  cursor: grab;
+  user-select: none;
+}
+
+.pc-drag-handle:active {
+  cursor: grabbing;
+}
+
+.pc-drag-handle svg {
+  width: 10px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.pc-priority {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  padding: 0;
+  border: 1px solid var(--border-color, #444);
+  border-radius: 4px;
+  background: var(--comfy-input-bg, #1c1c1f);
+  color: #999;
+  font-family: inherit;
+  font-size: 11px;
+  text-align: center;
+  outline: none;
+}
+
+.pc-priority:focus {
+  border-color: #6d5aa8;
+  color: var(--input-text, #ddd);
+}
+
+.pc-priority::-webkit-outer-spin-button,
+.pc-priority::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.pc-priority[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.pc-toggle {
+  position: relative;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 16px;
+  border-radius: 999px;
+  background: #46464c;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.pc-toggle.on {
+  background: #a78bfa;
+}
+
+.pc-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #e8e8ea;
+  transition: left 0.15s ease;
+  pointer-events: none;
+}
+
+.pc-toggle.on .pc-toggle-knob {
+  left: 16px;
+}
+
+.pc-group.is-off {
+  opacity: 0.45;
+}
+
+.pc-group.dragging {
+  opacity: 0.4;
+}
+
+.pc-group.drop-above {
+  border-top: 2px solid #a78bfa;
+}
+
+.pc-group.drop-below {
+  border-bottom: 2px solid #a78bfa;
+}
+
 .pc-group-body {
   display: flex;
   flex-direction: column;
@@ -237,6 +337,14 @@ const CSS = `
   letter-spacing: 0.02em;
   color: var(--descrip-text, #888);
   user-select: none;
+}
+
+.pc-field-label-positive {
+  color: #6bbf7a;
+}
+
+.pc-field-label-negative {
+  color: #e07070;
 }
 
 .pc-textarea {

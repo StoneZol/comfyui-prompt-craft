@@ -267,6 +267,37 @@ app.registerExtension({
         hideDuplicateCanvasFields();
       }
 
+      function moveGroup(fromIndex, toIndex) {
+        const last = groups.length - 1;
+        if (fromIndex < 0 || last < 0) return;
+        const next = Math.max(0, Math.min(last, toIndex));
+        if (fromIndex === next) {
+          renderCards();
+          return;
+        }
+        const [moved] = groups.splice(fromIndex, 1);
+        groups.splice(next, 0, moved);
+        persist();
+        renderCards();
+        fillDom();
+      }
+
+      function reorderGroup(fromId, toIndex) {
+        moveGroup(
+          groups.findIndex((group) => group.id === fromId),
+          toIndex,
+        );
+      }
+
+      function dropGroup(fromId, toId, after) {
+        const from = groups.findIndex((group) => group.id === fromId);
+        let to = groups.findIndex((group) => group.id === toId);
+        if (from < 0 || to < 0) return;
+        if (after) to += 1;
+        if (from < to) to -= 1;
+        moveGroup(from, to);
+      }
+
       function renderCards() {
         groupsWrap.replaceChildren();
         cards.clear();
@@ -277,16 +308,19 @@ app.registerExtension({
           groupsWrap.appendChild(empty);
           return;
         }
-        for (const group of groups) {
+        groups.forEach((group, index) => {
           const card = makeGroupCard(group, {
+            index,
             onChange: persist,
             onRemove: () => removeGroup(group.id),
             onPrompt: (key, value) => writeShadow(group, key, value),
             onRename: (name) => groupTitleError(groups, name, group.id),
+            onReorder: reorderGroup,
+            onDrop: dropGroup,
           });
           cards.set(group.id, card);
           groupsWrap.appendChild(card.el);
-        }
+        });
       }
 
       function rebuildShadows() {
@@ -310,6 +344,7 @@ app.registerExtension({
           title: name,
           positive: "",
           negative: "",
+          enabled: true,
           ...stampLabels(name),
         };
         groups.push(group);
@@ -343,6 +378,7 @@ app.registerExtension({
             title: name,
             positive: "",
             negative: "",
+            enabled: true,
             ...stampLabels(name),
           });
         }

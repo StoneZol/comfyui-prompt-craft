@@ -62,8 +62,8 @@ class PromptCraft:
 
     def craft(self, blocks_data, **kwargs):
         blocks = _parse_blocks(blocks_data)
-        positives = [block.get("positive", "") for block in blocks]
-        negatives = [block.get("negative", "") for block in blocks]
+        positives = [block.get("positive", "") for block in blocks if block.get("enabled", True) is not False]
+        negatives = [block.get("negative", "") for block in blocks if block.get("enabled", True) is not False]
         return (
             _join_fields(positives, DEFAULT_SEPARATOR),
             _join_fields(negatives, DEFAULT_SEPARATOR),
