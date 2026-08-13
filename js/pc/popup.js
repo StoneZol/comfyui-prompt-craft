@@ -6,6 +6,9 @@ const CSS = `
   z-index: 11000;
   min-width: 240px;
   max-width: min(420px, calc(100vw - 16px));
+  max-height: min(70vh, 560px);
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
   padding: 8px;
   border-radius: 10px;
@@ -18,6 +21,7 @@ const CSS = `
 }
 
 .pc-popup-title {
+  flex: 0 0 auto;
   font-size: 11px;
   letter-spacing: 0.02em;
   color: var(--descrip-text, #aaa);
@@ -29,6 +33,8 @@ const CSS = `
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .pc-popup-input {
@@ -101,6 +107,150 @@ const CSS = `
   padding: 2px 4px 0;
   line-height: 1.4;
   color: var(--input-text, #ddd);
+}
+
+.pc-save-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #3a3a3a);
+}
+
+.pc-save-cat {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--descrip-text, #aaa);
+  user-select: none;
+}
+
+.pc-popup-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #444);
+  background: var(--comfy-input-bg, #222);
+  color: var(--input-text, #ddd);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.35;
+  resize: vertical;
+  outline: none;
+}
+
+.pc-popup-textarea:focus {
+  border-color: var(--descrip-text, #888);
+}
+
+.pc-save-slots {
+  padding: 2px 4px 0;
+  color: var(--descrip-text, #aaa);
+  line-height: 1.4;
+}
+
+.pc-preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pc-preset-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #444);
+  background: var(--comfy-input-bg, #2a2a2e);
+  color: var(--input-text, #ddd);
+  box-sizing: border-box;
+}
+
+.pc-preset-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+}
+
+.pc-preset-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pc-preset-slots {
+  font-size: 11px;
+  color: var(--descrip-text, #aaa);
+  line-height: 1.35;
+}
+
+.pc-preset-desc-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.pc-preset-desc {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--descrip-text, #888);
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+
+.pc-preset-item.desc-long.desc-collapsed .pc-preset-desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.pc-preset-load,
+.pc-preset-collapse {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--descrip-text, #888);
+  cursor: pointer;
+  padding: 0;
+}
+
+.pc-preset-load:hover,
+.pc-preset-collapse:hover {
+  color: var(--input-text, #ddd);
+  background: var(--comfy-menu-bg, #1e1e1e);
+  border-color: var(--border-color, #444);
+}
+
+.pc-preset-load svg,
+.pc-preset-collapse svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.pc-preset-collapse svg {
+  transition: transform 0.15s ease;
+}
+
+.pc-preset-item.desc-collapsed .pc-preset-collapse svg {
+  transform: rotate(-90deg);
 }
 `;
 
@@ -292,6 +442,7 @@ export function openConfirmPopup({
   message = "",
   confirmLabel = "Delete",
   cancelLabel = "Cancel",
+  showCancel = true,
   danger = true,
   onConfirm,
 } = {}) {
@@ -327,7 +478,8 @@ export function openConfirmPopup({
         onConfirm?.();
       });
 
-      actions.append(cancel, confirm);
+      if (showCancel) actions.appendChild(cancel);
+      actions.appendChild(confirm);
       body.append(text, actions);
       requestAnimationFrame(() => confirm.focus());
     },

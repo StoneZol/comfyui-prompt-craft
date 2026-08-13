@@ -6,13 +6,23 @@ const CSS = `
   box-sizing: border-box;
   padding: 4px 2px 6px;
   width: 100%;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 
 .pc-header {
   flex: 0 0 auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pc-header-row {
   display: flex;
   align-items: center;
+  gap: 6px;
 }
 
 .pc-title-input,
@@ -42,9 +52,12 @@ const CSS = `
   border-color: #c0392b;
 }
 
-.pc-add-btn {
-  flex: 1 1 auto;
-  width: 100%;
+.pc-add-btn,
+.pc-save-btn,
+.pc-load-btn {
+  flex: 1 1 0;
+  flex-shrink: 0;
+  width: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -52,20 +65,38 @@ const CSS = `
   height: 28px;
   padding: 0 10px;
   border-radius: 6px;
-  border: 1px solid #6d5aa8;
-  background: #2f2b3d;
-  color: #e8e4f5;
   cursor: pointer;
   font-size: 12px;
   font-family: inherit;
   white-space: nowrap;
+  box-sizing: border-box;
+  line-height: 1;
 }
 
-.pc-add-btn:hover {
+.pc-add-btn {
+  height: 34px;
+  min-height: 34px;
+  border: 1px solid #6d5aa8;
+  background: #2f2b3d;
+  color: #e8e4f5;
+}
+
+.pc-save-btn,
+.pc-load-btn {
+  border: 1px solid var(--border-color, #444);
+  background: var(--comfy-input-bg, #2a2a2e);
+  color: var(--input-text, #ddd);
+}
+
+.pc-add-btn:hover,
+.pc-save-btn:hover,
+.pc-load-btn:hover {
   filter: brightness(1.15);
 }
 
-.pc-add-btn svg {
+.pc-add-btn svg,
+.pc-save-btn svg,
+.pc-load-btn svg {
   width: 14px;
   height: 14px;
   display: block;
@@ -76,7 +107,9 @@ const CSS = `
   flex-direction: column;
   gap: 8px;
   box-sizing: border-box;
+  flex: 1 1 auto;
   min-height: 0;
+  overflow-y: auto;
   overscroll-behavior: contain;
 }
 
@@ -216,9 +249,9 @@ const CSS = `
 
 .lg-node [data-testid="node-widget"]:has([name="blocks_data"]),
 .lg-node-widget:has([name="blocks_data"]),
-[data-testid="node-widgets"] [data-testid="node-widget"]:has([name="blocks_data"]),
-.lg-node [data-testid="node-widget"]:has([name^="pc_"][name$="_positive"]),
-.lg-node [data-testid="node-widget"]:has([name^="pc_"][name$="_negative"]),
+[data-testid="node-widget"]:has([name="blocks_data"]),
+[data-testid="node-widget"]:has([name^="pc_"][name$="_positive"]),
+[data-testid="node-widget"]:has([name^="pc_"][name$="_negative"]),
 .lg-node-widget:has([name^="pc_"][name$="_positive"]),
 .lg-node-widget:has([name^="pc_"][name$="_negative"]) {
   display: none !important;

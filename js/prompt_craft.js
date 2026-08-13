@@ -1,9 +1,11 @@
 import { app } from "../../../scripts/app.js";
 import { loadConfig } from "./pc/config.js";
 import { injectStyles } from "./pc/styles.js";
-import { PLUS_ICON_SVG } from "./pc/icons.js";
+import { PLUS_ICON_SVG, SAVE_ICON_SVG, LOAD_ICON_SVG } from "./pc/icons.js";
 import { makeGroupCard } from "./pc/group_card.js";
 import { openInputPopup } from "./pc/popup.js";
+import { openSavePresetsPopup } from "./pc/save_dialog.js";
+import { confirmReplaceGroups, openLoadPresetPopup } from "./pc/load_dialog.js";
 import {
   createShadowString,
   hideOnCanvasKeepInPanel,
@@ -16,14 +18,14 @@ injectStyles(config.style_id);
 
 const MIN_NODE_WIDTH = 400;
 const SOCKET_ROWS_HEIGHT = 56;
-const ADD_BTN_HEIGHT = 28;
+const HEADER_HEIGHT = 68;
 const CONTAINER_PADDING_V = 10;
 const GAP_BETWEEN_SECTIONS = 8;
 const GROUP_HEIGHT = 266;
 const GROUP_GAP = 8;
 const EMPTY_HINT_HEIGHT = 28;
 const BOTTOM_SLACK = 12;
-const MIN_VISIBLE_GROUPS = 1;
+const MIN_UI_HEIGHT = HEADER_HEIGHT + EMPTY_HINT_HEIGHT + 24;
 const LEFT_PULL = 10;
 const KEPT_WIDGETS = new Set(["blocks_data", "prompt_craft_ui"]);
 
@@ -91,7 +93,7 @@ app.registerExtension({
 
       if (node.size?.[0]) {
         const defaultHeight =
-          SOCKET_ROWS_HEIGHT + ADD_BTN_HEIGHT + GAP_BETWEEN_SECTIONS + CONTAINER_PADDING_V + BOTTOM_SLACK + GROUP_HEIGHT;
+          SOCKET_ROWS_HEIGHT + HEADER_HEIGHT + GAP_BETWEEN_SECTIONS + CONTAINER_PADDING_V + BOTTOM_SLACK + GROUP_HEIGHT;
         node.setSize([Math.max(node.size[0], MIN_NODE_WIDTH), Math.max(node.size[1] || 0, defaultHeight)]);
       }
 
@@ -104,6 +106,7 @@ app.registerExtension({
 
       let groups = parseGroups(dataWidget?.value);
       const cards = new Map();
+      let uiWidget = null;
 
       const root = document.createElement("div");
       root.className = "pc-root";
@@ -118,7 +121,21 @@ app.registerExtension({
       addBtn.className = "pc-add-btn";
       addBtn.innerHTML = `${PLUS_ICON_SVG}<span>Add group</span>`;
 
-      header.appendChild(addBtn);
+      const libraryRow = document.createElement("div");
+      libraryRow.className = "pc-header-row";
+
+      const saveBtn = document.createElement("button");
+      saveBtn.type = "button";
+      saveBtn.className = "pc-save-btn";
+      saveBtn.innerHTML = `${SAVE_ICON_SVG}<span>Save presets</span>`;
+
+      const loadBtn = document.createElement("button");
+      loadBtn.type = "button";
+      loadBtn.className = "pc-load-btn";
+      loadBtn.innerHTML = `${LOAD_ICON_SVG}<span>Load preset</span>`;
+
+      libraryRow.append(saveBtn, loadBtn);
+      header.append(addBtn, libraryRow);
 
       const groupsWrap = document.createElement("div");
       groupsWrap.className = "pc-groups";
@@ -188,20 +205,6 @@ app.registerExtension({
         widget.value = value;
       }
 
-      function computeRequiredHeights() {
-        const count = groups.length;
-        const chromeHeight = ADD_BTN_HEIGHT + GAP_BETWEEN_SECTIONS + CONTAINER_PADDING_V + BOTTOM_SLACK;
-        const minVisible = count > 0 ? Math.min(count, MIN_VISIBLE_GROUPS) : 0;
-        const floorGroupsHeight =
-          minVisible > 0
-            ? minVisible * GROUP_HEIGHT + (minVisible - 1) * GROUP_GAP
-            : EMPTY_HINT_HEIGHT;
-        return {
-          floorNodeHeight: SOCKET_ROWS_HEIGHT + chromeHeight + floorGroupsHeight,
-          chromeHeight,
-        };
-      }
-
       function syncWidth() {
         const nodeWidth = node.size?.[0] || MIN_NODE_WIDTH;
         root.style.width = `${nodeWidth}px`;
@@ -210,30 +213,58 @@ app.registerExtension({
         root.style.marginBottom = "0";
       }
 
-      let isProgrammaticResize = false;
+      function isVueNodes() {
+        return Boolean(root.closest?.("[data-testid='node-widget']"));
+      }
 
-      function resizeNode() {
-        syncWidth();
-        const { floorNodeHeight, chromeHeight } = computeRequiredHeights();
-        if ((node.size?.[1] || 0) < floorNodeHeight) {
-          isProgrammaticResize = true;
-          node.setSize([Math.max(node.size[0], MIN_NODE_WIDTH), floorNodeHeight]);
-          isProgrammaticResize = false;
+      function hideDuplicateCanvasFields() {
+        let host = root.parentElement;
+        for (let i = 0; i < 8 && host; i++) {
+          const widgets = host.querySelectorAll?.("[data-testid='node-widget'], .lg-node-widget");
+          if (widgets?.length) {
+            widgets.forEach((el) => {
+              if (el.contains(root)) return;
+              const label = (el.textContent || "").replace(/\s+/g, " ");
+              if (/\| positive|\| negative/.test(label)) {
+                el.style.setProperty("display", "none", "important");
+                el.style.setProperty("height", "0", "important");
+                el.style.setProperty("min-height", "0", "important");
+                el.style.setProperty("overflow", "hidden", "important");
+                el.style.setProperty("margin", "0", "important");
+                el.style.setProperty("padding", "0", "important");
+              }
+            });
+            return;
+          }
+          host = host.parentElement;
         }
+      }
 
-        const bodyH = Math.max(
-          (node.size[1] || 0) - SOCKET_ROWS_HEIGHT,
-          chromeHeight + (groups.length ? GROUP_HEIGHT : EMPTY_HINT_HEIGHT),
-        );
-        root.style.height = `${bodyH}px`;
-        root.style.maxHeight = `${bodyH}px`;
-        root.style.minHeight = `${bodyH}px`;
+      function fillDom() {
+        syncWidth();
+        const chromeHeight = HEADER_HEIGHT + GAP_BETWEEN_SECTIONS + CONTAINER_PADDING_V + BOTTOM_SLACK;
+        const bodyH = Math.max((node.size?.[1] || 0) - SOCKET_ROWS_HEIGHT, MIN_UI_HEIGHT);
+        const overlay = uiWidget?.element;
 
-        const available = bodyH - chromeHeight;
-        const minList = groups.length ? GROUP_HEIGHT : EMPTY_HINT_HEIGHT;
-        groupsWrap.style.maxHeight = `${Math.max(available, minList)}px`;
+        if (isVueNodes()) {
+          root.style.height = "100%";
+          root.style.maxHeight = "100%";
+          root.style.minHeight = "0";
+          groupsWrap.style.maxHeight = "";
+        } else {
+          if (overlay) {
+            overlay.style.boxSizing = "border-box";
+            overlay.style.height = `${bodyH}px`;
+            overlay.style.maxHeight = `${bodyH}px`;
+            overlay.style.overflow = "hidden";
+          }
+          root.style.height = `${bodyH}px`;
+          root.style.maxHeight = `${bodyH}px`;
+          root.style.minHeight = `${bodyH}px`;
+          groupsWrap.style.maxHeight = `${Math.max(bodyH - chromeHeight, 80)}px`;
+        }
         groupsWrap.style.overflowY = "auto";
-        node.setDirtyCanvas(true, true);
+        hideDuplicateCanvasFields();
       }
 
       function renderCards() {
@@ -285,7 +316,7 @@ app.registerExtension({
         persist();
         addShadows(group);
         renderCards();
-        resizeNode();
+        fillDom();
         hideDataWidget(dataWidget);
         return "";
       }
@@ -296,7 +327,29 @@ app.registerExtension({
         persist();
         removeShadows(id);
         renderCards();
-        resizeNode();
+        fillDom();
+        hideDataWidget(dataWidget);
+      }
+
+      function applyLayout(layout) {
+        const ids = groups.map((group) => group.id);
+        groups = [];
+        for (const id of ids) removeShadows(id);
+        for (const slot of layout.slots || []) {
+          const name = (slot || "").trim();
+          if (!name) continue;
+          groups.push({
+            id: newGroupId(),
+            title: name,
+            positive: "",
+            negative: "",
+            ...stampLabels(name),
+          });
+        }
+        persist();
+        for (const group of groups) addShadows(group);
+        renderCards();
+        fillDom();
         hideDataWidget(dataWidget);
       }
 
@@ -312,6 +365,28 @@ app.registerExtension({
         });
       });
 
+      saveBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openSavePresetsPopup({ anchor: saveBtn, groups });
+      });
+
+      loadBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openLoadPresetPopup({
+          anchor: loadBtn,
+          onPick: (layout) => {
+            if (groups.length) {
+              confirmReplaceGroups({
+                anchor: loadBtn,
+                onConfirm: () => applyLayout(layout),
+              });
+              return;
+            }
+            applyLayout(layout);
+          },
+        });
+      });
+
       const onResize = node.onResize;
       node.onResize = function () {
         const result = onResize ? onResize.apply(this, arguments) : undefined;
@@ -319,11 +394,7 @@ app.registerExtension({
         for (const w of node.widgets || []) {
           if (isShadowFieldName(w.name)) hideOnCanvasKeepInPanel(w);
         }
-        if (isProgrammaticResize) {
-          syncWidth();
-          return result;
-        }
-        resizeNode();
+        fillDom();
         return result;
       };
 
@@ -335,11 +406,11 @@ app.registerExtension({
         groups = parseGroups(w?.value);
         rebuildShadows();
         renderCards();
-        resizeNode();
+        fillDom();
         return result;
       };
 
-      const uiWidget = node.addDOMWidget("prompt_craft_ui", "div", root, {
+      uiWidget = node.addDOMWidget("prompt_craft_ui", "div", root, {
         serialize: false,
         hideOnZoom: false,
       });
@@ -349,7 +420,14 @@ app.registerExtension({
           ...(uiWidget.options || {}),
           serialize: false,
           hideInPanel: true,
+          getMinHeight: () => MIN_UI_HEIGHT,
+          afterResize: () => fillDom(),
         };
+        uiWidget.computeSize = (width) => [width || MIN_NODE_WIDTH, MIN_UI_HEIGHT];
+        uiWidget.computeLayoutSize = () => ({
+          minHeight: MIN_UI_HEIGHT,
+          minWidth: 0,
+        });
       }
 
       function scanAndHideBlocksData() {
@@ -376,12 +454,17 @@ app.registerExtension({
 
       renderCards();
       if (groups.length) rebuildShadows();
-      syncWidth();
+      fillDom();
       setTimeout(() => {
         scanAndHideBlocksData();
-        resizeNode();
+        fillDom();
       }, 0);
-      [50, 150, 400, 1000].forEach((delay) => setTimeout(scanAndHideBlocksData, delay));
+      [50, 150, 400, 1000].forEach((delay) =>
+        setTimeout(() => {
+          scanAndHideBlocksData();
+          hideDuplicateCanvasFields();
+        }, delay),
+      );
 
       return r;
     };

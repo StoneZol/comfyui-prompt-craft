@@ -2,17 +2,23 @@ const FIELD_RE = /^(pc_.+)_(positive|negative)$/;
 
 export function hideOnCanvasKeepInPanel(widget) {
   if (!widget) return;
+  // Vue node body uses widget.hidden. The side panel uses options.hidden /
+  // options.canvasOnly — leave those unset so Inputs still shows the field.
   widget.hidden = true;
   widget.hasLayoutSize = false;
   widget.serialize = false;
   widget.computeSize = () => [0, -4];
   widget.draw = () => {};
   widget.mouse = () => false;
+  widget.computeLayoutSize = () => ({ minHeight: 0, maxHeight: 0, minWidth: 0 });
   widget.options = {
     ...(widget.options || {}),
     serialize: false,
+    multiline: true,
     minNodeSize: [0, 0],
   };
+  delete widget.options.hidden;
+  delete widget.options.canvasOnly;
   const el = widget.element || widget.inputEl || widget.textEl || widget.domElement;
   if (el?.style) {
     el.style.display = "none";
@@ -26,13 +32,13 @@ export function hideOnCanvasKeepInPanel(widget) {
 }
 
 export function createShadowString(node, name, value, label) {
-  const widget = node.addWidget("text", name, value || "", () => {}, {});
+  const widget = node.addWidget("text", name, value || "", () => {}, { multiline: true });
   widget.label = label;
   widget.value = value || "";
   hideOnCanvasKeepInPanel(widget);
-  // Nodes 2.0 skips Vue rendering when type is falsy (`shouldRenderAsVue`).
-  // Keep name/label/value so the side panel can still pin the field.
-  widget.type = "";
+  // Keep a real type so the side panel can mount a textarea. Empty type
+  // skips Vue rendering everywhere (`shouldRenderAsVue`).
+  widget.type = "customtext";
   return widget;
 }
 
