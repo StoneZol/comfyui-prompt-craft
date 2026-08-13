@@ -1,5 +1,67 @@
 import { openConfirmPopup, openPopup } from "./popup.js";
-import { saveLayout } from "./api.js";
+import { listLayoutFolders, saveLayout } from "./api.js";
+
+const UNCATEGORISED = "Uncategorised";
+
+function matchesFolder(name, query) {
+  if (!query) return true;
+  const label = name || UNCATEGORISED;
+  return label.toLowerCase().includes(query);
+}
+
+function openFolderPicker({ anchor, folders, current, onPick, onClose }) {
+  return openPopup({
+    nested: true,
+    anchor,
+    title: "Category",
+    width: 260,
+    onClose,
+    render(body, { close }) {
+      const filter = document.createElement("input");
+      filter.className = "pc-popup-input";
+      filter.type = "text";
+      filter.placeholder = "filter";
+
+      const list = document.createElement("div");
+      list.className = "pc-pick-list";
+
+      const items = ["", ...folders];
+      const selected = (current || "").trim();
+
+      function paint() {
+        const q = filter.value.trim().toLowerCase();
+        const shown = items.filter((name) => matchesFolder(name, q));
+
+        list.replaceChildren();
+        if (!shown.length) {
+          const empty = document.createElement("div");
+          empty.className = "pc-popup-message";
+          empty.textContent = "No categories";
+          list.appendChild(empty);
+          return;
+        }
+        for (const name of shown) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "pc-pick-item";
+          btn.textContent = name || UNCATEGORISED;
+          if ((name || "") === selected) btn.classList.add("selected");
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            close();
+            onPick?.(name);
+          });
+          list.appendChild(btn);
+        }
+      }
+
+      filter.addEventListener("input", paint);
+      paint();
+      body.append(filter, list);
+      requestAnimationFrame(() => filter.focus());
+    },
+  });
+}
 
 export function openSavePresetsPopup({ anchor, groups }) {
   const slots = (groups || [])
@@ -32,6 +94,21 @@ export function openSavePresetsPopup({ anchor, groups }) {
       title.type = "text";
       title.placeholder = "preset name";
 
+      const folderRow = document.createElement("div");
+      folderRow.className = "pc-save-folder-row";
+
+      const folder = document.createElement("input");
+      folder.className = "pc-popup-input";
+      folder.type = "text";
+      folder.placeholder = "Uncategorised";
+
+      const pickBtn = document.createElement("button");
+      pickBtn.type = "button";
+      pickBtn.className = "pc-popup-btn";
+      pickBtn.textContent = "Choose";
+
+      folderRow.append(folder, pickBtn);
+
       const desc = document.createElement("textarea");
       desc.className = "pc-popup-textarea";
       desc.placeholder = "description (optional)";
@@ -49,6 +126,8 @@ export function openSavePresetsPopup({ anchor, groups }) {
       confirm.textContent = "Save";
 
       let overwrite = false;
+      let folders = [];
+      let picker = null;
 
       function resetOverwrite() {
         if (!overwrite) return;
@@ -57,6 +136,26 @@ export function openSavePresetsPopup({ anchor, groups }) {
         confirm.classList.remove("danger");
         confirm.classList.add("primary");
       }
+
+      pickBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (picker) {
+          picker.close();
+          picker = null;
+          return;
+        }
+        picker = openFolderPicker({
+          anchor: pickBtn,
+          folders,
+          current: folder.value.trim(),
+          onPick: (name) => {
+            folder.value = name || "";
+          },
+          onClose: () => {
+            picker = null;
+          },
+        });
+      });
 
       async function submit() {
         const name = title.value.trim();
@@ -72,6 +171,7 @@ export function openSavePresetsPopup({ anchor, groups }) {
             name,
             description: desc.value.trim(),
             slots,
+            folder: folder.value.trim(),
             overwrite,
           });
           if (result.conflicts?.length) {
@@ -109,10 +209,22 @@ export function openSavePresetsPopup({ anchor, groups }) {
           submit();
         }
       });
+      folder.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          submit();
+        }
+      });
 
       actions.appendChild(confirm);
-      body.append(hint, title, desc, errorEl, actions);
+      body.append(hint, title, folderRow, desc, errorEl, actions);
       requestAnimationFrame(() => title.focus());
+
+      listLayoutFolders()
+        .then((result) => {
+          folders = result.folders || [];
+        })
+        .catch(() => {});
     },
   });
 }

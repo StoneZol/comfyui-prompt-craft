@@ -20,6 +20,10 @@ const CSS = `
   font-size: 12px;
 }
 
+.pc-popup-nested {
+  z-index: 11100;
+}
+
 .pc-popup-title {
   flex: 0 0 auto;
   font-size: 11px;
@@ -151,10 +155,129 @@ const CSS = `
   line-height: 1.4;
 }
 
+.pc-save-folder-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pc-save-folder-row .pc-popup-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+}
+
+.pc-save-folder-row .pc-popup-btn {
+  flex: 0 0 auto;
+}
+
+.pc-pick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.pc-pick-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #444);
+  background: var(--comfy-input-bg, #2a2a2e);
+  color: var(--input-text, #ddd);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  text-align: left;
+}
+
+.pc-pick-item:hover {
+  filter: brightness(1.12);
+}
+
+.pc-pick-item.selected {
+  background: #2f2b3d;
+  border-color: #6d5aa8;
+  color: #e8e4f5;
+}
+
 .pc-preset-list {
   display: flex;
   flex-direction: column;
+  gap: 8px;
+}
+
+.pc-preset-folder {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
+}
+
+.pc-preset-folder-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 4px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--input-text, #ddd);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  text-align: left;
+}
+
+.pc-preset-folder-head:hover {
+  background: var(--comfy-input-bg, #2a2a2e);
+}
+
+.pc-preset-folder-chevron {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  color: var(--descrip-text, #888);
+}
+
+.pc-preset-folder-chevron svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  transition: transform 0.15s ease;
+}
+
+.pc-preset-folder.collapsed .pc-preset-folder-chevron svg {
+  transform: rotate(-90deg);
+}
+
+.pc-preset-folder-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pc-preset-folder-count {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--descrip-text, #888);
+}
+
+.pc-preset-folder-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pc-preset-folder.collapsed .pc-preset-folder-body {
+  display: none;
 }
 
 .pc-preset-item {
@@ -208,13 +331,6 @@ const CSS = `
   white-space: pre-wrap;
 }
 
-.pc-preset-item.desc-long.desc-collapsed .pc-preset-desc {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
 .pc-preset-load,
 .pc-preset-collapse {
   flex: 0 0 28px;
@@ -262,7 +378,7 @@ function injectPopupStyles() {
   document.head.appendChild(style);
 }
 
-let activePopup = null;
+const popupStack = [];
 
 function placePopup(el, { anchor, position }) {
   const margin = 8;
@@ -289,22 +405,27 @@ function placePopup(el, { anchor, position }) {
 
 /**
  * Floating popup anchored to an element or screen point.
- * One instance at a time; next open closes the previous.
+ * A non-nested open closes the whole stack. Nested opens stack on top;
+ * Escape / outside-click closes only the top dialog.
  *
  * @param {object} opts
  * @param {HTMLElement} [opts.anchor]
  * @param {{x:number,y:number}} [opts.position]
  * @param {string} [opts.title]
  * @param {number} [opts.width]
+ * @param {boolean} [opts.nested]
  * @param {(body: HTMLElement, api: { close: () => void, root: HTMLElement, setTitle: (t: string) => void }) => void} opts.render
  * @param {() => void} [opts.onClose]
  */
 export function openPopup(opts) {
   injectPopupStyles();
-  activePopup?.close();
+  if (!opts.nested) {
+    while (popupStack.length) popupStack[popupStack.length - 1].close();
+  }
 
   const root = document.createElement("div");
   root.className = "pc-popup-root";
+  if (opts.nested) root.classList.add("pc-popup-nested");
   if (opts.width) root.style.width = `${opts.width}px`;
   root.addEventListener("pointerdown", (e) => e.stopPropagation());
   root.addEventListener("wheel", (e) => e.stopPropagation(), { passive: true });
@@ -323,22 +444,38 @@ export function openPopup(opts) {
   function close() {
     if (closed) return;
     closed = true;
+    while (popupStack.length && popupStack[popupStack.length - 1] !== api) {
+      popupStack[popupStack.length - 1].close();
+    }
+    const index = popupStack.indexOf(api);
+    if (index >= 0) popupStack.splice(index, 1);
     document.removeEventListener("pointerdown", onDocDown, true);
     document.removeEventListener("keydown", onKey, true);
     root.remove();
-    if (activePopup === api) activePopup = null;
     opts.onClose?.();
   }
 
   function onDocDown(e) {
-    if (!root.contains(e.target) && e.target !== opts.anchor) close();
+    if (popupStack[popupStack.length - 1] !== api) return;
+    if (root.contains(e.target) || e.target === opts.anchor) return;
+    const inStack = popupStack.some((item) => item.root.contains(e.target));
+    if (inStack) {
+      close();
+      return;
+    }
+    if (popupStack[0] && popupStack[0] !== api) {
+      popupStack[0].close();
+      return;
+    }
+    close();
   }
 
   function onKey(e) {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      close();
-    }
+    if (e.key !== "Escape") return;
+    if (popupStack[popupStack.length - 1] !== api) return;
+    e.preventDefault();
+    e.stopPropagation();
+    close();
   }
 
   const api = {
@@ -350,11 +487,11 @@ export function openPopup(opts) {
     },
   };
 
+  popupStack.push(api);
   opts.render?.(body, api);
   placePopup(root, opts);
   document.addEventListener("pointerdown", onDocDown, true);
   document.addEventListener("keydown", onKey, true);
-  activePopup = api;
   return api;
 }
 

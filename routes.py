@@ -7,6 +7,7 @@ from . import db
 
 SAVE_ROUTE = "/prompt_craft/layouts"
 LIST_ROUTE = "/prompt_craft/layouts"
+FOLDERS_ROUTE = "/prompt_craft/layout_folders"
 
 db.init_db()
 
@@ -26,6 +27,7 @@ async def save_layout(request):
             payload.get("description") or "",
             payload.get("slots") or [],
             overwrite=bool(payload.get("overwrite")),
+            folder=payload.get("folder") or "",
         )
     except Exception as exc:
         return web.json_response({"ok": False, "error": str(exc)}, status=500)
@@ -42,7 +44,17 @@ async def list_layouts(request):
     return web.json_response(result)
 
 
+async def list_layout_folders(request):
+    try:
+        result = db.list_layout_folders()
+    except Exception as exc:
+        return web.json_response({"ok": False, "error": str(exc)}, status=500)
+    return web.json_response(result)
+
+
 _existing = {getattr(route, "path", None) for route in PromptServer.instance.routes}
 if SAVE_ROUTE not in _existing:
     PromptServer.instance.routes.post(SAVE_ROUTE)(save_layout)
     PromptServer.instance.routes.get(LIST_ROUTE)(list_layouts)
+if FOLDERS_ROUTE not in _existing:
+    PromptServer.instance.routes.get(FOLDERS_ROUTE)(list_layout_folders)
