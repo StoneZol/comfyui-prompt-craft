@@ -1,5 +1,5 @@
 import { openConfirmPopup, openPopup } from "./popup.js";
-import { listLayoutFolders, saveLayout } from "./api.js";
+import { listLayoutFolders, saveLayout, shelfNames } from "./api.js";
 
 const UNCATEGORISED = "Uncategorised";
 
@@ -222,7 +222,7 @@ export function openSavePresetsPopup({ anchor, groups }) {
 
       listLayoutFolders()
         .then((result) => {
-          folders = result.folders || [];
+          folders = shelfNames(result.folders);
         })
         .catch(() => {});
     },

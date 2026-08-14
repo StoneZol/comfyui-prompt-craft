@@ -14,6 +14,13 @@ async function readJson(res) {
   return data;
 }
 
+/** API shelves may be plain strings (legacy) or { name, count }. */
+export function shelfNames(items) {
+  return (items || [])
+    .map((item) => (typeof item === "string" ? item : item?.name || ""))
+    .filter(Boolean);
+}
+
 export async function saveLayout({ name, description, slots, folder = "", overwrite = false }) {
   const res = await fetch(LAYOUTS_URL, {
     method: "POST",
@@ -28,8 +35,36 @@ export async function listLayouts() {
   return readJson(res);
 }
 
+export async function updateLayout({ id, name, description, folder, overwrite = false }) {
+  const res = await fetch(LAYOUTS_URL, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, name, description, folder, overwrite }),
+  });
+  return readJson(res);
+}
+
+export async function deleteLayout(id) {
+  const res = await fetch(`${LAYOUTS_URL}?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+  return readJson(res);
+}
+
 export async function listLayoutFolders() {
   const res = await fetch(FOLDERS_URL);
+  return readJson(res);
+}
+
+export async function renameLayoutFolder({ name, newName }) {
+  const res = await fetch(FOLDERS_URL, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, new_name: newName }),
+  });
+  return readJson(res);
+}
+
+export async function deleteLayoutFolder(name) {
+  const res = await fetch(`${FOLDERS_URL}?name=${encodeURIComponent(name)}`, { method: "DELETE" });
   return readJson(res);
 }
 
@@ -59,9 +94,39 @@ export async function listPresets({ category = "" } = {}) {
   return readJson(res);
 }
 
+export async function updatePreset({ id, title, description, category, overwrite = false }) {
+  const res = await fetch(PRESETS_URL, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, title, description, category, overwrite }),
+  });
+  return readJson(res);
+}
+
+export async function deletePreset(id) {
+  const res = await fetch(`${PRESETS_URL}?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+  return readJson(res);
+}
+
 const CATEGORIES_URL = "/prompt_craft/categories";
 
 export async function listCategories() {
   const res = await fetch(CATEGORIES_URL);
+  return readJson(res);
+}
+
+export async function renameCategory({ name, newName }) {
+  const res = await fetch(CATEGORIES_URL, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, new_name: newName }),
+  });
+  return readJson(res);
+}
+
+export async function deleteCategory(name) {
+  const res = await fetch(`${CATEGORIES_URL}?name=${encodeURIComponent(name)}`, {
+    method: "DELETE",
+  });
   return readJson(res);
 }

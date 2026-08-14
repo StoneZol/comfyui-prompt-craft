@@ -54,7 +54,8 @@ const CSS = `
 
 .pc-add-btn,
 .pc-save-btn,
-.pc-load-btn {
+.pc-load-btn,
+.pc-manage-btn {
   flex: 1 1 0;
   flex-shrink: 0;
   width: auto;
@@ -88,9 +89,20 @@ const CSS = `
   color: var(--input-text, #ddd);
 }
 
+.pc-manage-btn {
+  width: 100%;
+  height: 28px;
+  border: 1px solid var(--border-color, #444);
+  background: transparent;
+  color: var(--descrip-text, #aaa);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
 .pc-add-btn:hover,
 .pc-save-btn:hover,
-.pc-load-btn:hover {
+.pc-load-btn:hover,
+.pc-manage-btn:hover {
   filter: brightness(1.15);
 }
 

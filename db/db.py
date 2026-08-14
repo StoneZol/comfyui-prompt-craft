@@ -24,6 +24,8 @@ def _connect() -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")
+    _migrate(conn)
+    conn.commit()
     return conn
 
 
@@ -72,8 +74,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
         );
         """
     )
-    cols = _table_columns(conn, "layouts")
-    if "folder_id" not in cols:
+    if _table_columns(conn, "layouts") and "folder_id" not in _table_columns(conn, "layouts"):
         conn.execute(
             "ALTER TABLE layouts ADD COLUMN folder_id INTEGER REFERENCES layout_folders(id) ON DELETE SET NULL"
         )
@@ -85,11 +86,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
 def init_db() -> None:
     with _lock:
         conn = _connect()
-        try:
-            _migrate(conn)
-            conn.commit()
-        finally:
-            conn.close()
+        conn.close()
 
 
 def _get_or_create_category(conn: sqlite3.Connection, name: str) -> Tuple[int, bool]:
@@ -174,12 +171,6 @@ def save_layout(
         conn = _connect()
         try:
             conn.execute("BEGIN")
-            created_categories = []
-            for slot in slot_names:
-                _cat_id, created = _get_or_create_category(conn, slot)
-                if created:
-                    created_categories.append(slot)
-
             folder_id = _get_or_create_folder(conn, folder)
             folder_name = ""
             if folder_id:
@@ -222,7 +213,6 @@ def save_layout(
                 "name": title,
                 "slots": slot_names,
                 "folder": folder_name,
-                "created_categories": created_categories,
             }
         except Exception:
             conn.rollback()
@@ -381,12 +371,21 @@ def list_categories() -> Dict:
         try:
             rows = conn.execute(
                 """
-                SELECT name
+                SELECT
+                    categories.name AS name,
+                    COUNT(presets.id) AS count
                 FROM categories
-                ORDER BY name COLLATE NOCASE
+                LEFT JOIN presets ON presets.category_id = categories.id
+                GROUP BY categories.id
+                ORDER BY categories.name COLLATE NOCASE
                 """
             ).fetchall()
-            return {"ok": True, "categories": [row["name"] for row in rows]}
+            return {
+                "ok": True,
+                "categories": [
+                    {"name": row["name"], "count": int(row["count"] or 0)} for row in rows
+                ],
+            }
         finally:
             conn.close()
 
@@ -397,15 +396,316 @@ def list_layout_folders() -> Dict:
         try:
             rows = conn.execute(
                 """
-                SELECT name
+                SELECT
+                    layout_folders.name AS name,
+                    COUNT(layouts.id) AS count
                 FROM layout_folders
-                ORDER BY name COLLATE NOCASE
+                LEFT JOIN layouts ON layouts.folder_id = layout_folders.id
+                GROUP BY layout_folders.id
+                ORDER BY layout_folders.name COLLATE NOCASE
                 """
             ).fetchall()
             return {
                 "ok": True,
-                "folders": [row["name"] for row in rows],
+                "folders": [
+                    {"name": row["name"], "count": int(row["count"] or 0)} for row in rows
+                ],
                 "uncategorised": UNCATEGORISED_NAME,
             }
+        finally:
+            conn.close()
+
+
+def update_layout(
+    layout_id: int,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    folder: Optional[str] = None,
+    overwrite: bool = False,
+) -> Dict:
+    with _lock:
+        conn = _connect()
+        try:
+            conn.execute("BEGIN")
+            row = conn.execute("SELECT * FROM layouts WHERE id = ?", (int(layout_id),)).fetchone()
+            if not row:
+                conn.rollback()
+                return {"ok": False, "error": "Not found"}
+
+            next_name = row["name"] if name is None else (name or "").strip()
+            next_desc = row["description"] if description is None else (description or "").strip()
+            next_folder_id = row["folder_id"]
+            if not next_name:
+                conn.rollback()
+                return {"ok": False, "error": "Name is required"}
+
+            if name is not None and next_name.casefold() != (row["name"] or "").casefold():
+                existing = conn.execute(
+                    "SELECT id FROM layouts WHERE name = ? COLLATE NOCASE AND id != ?",
+                    (next_name, int(layout_id)),
+                ).fetchone()
+                if existing and not overwrite:
+                    conn.rollback()
+                    return {"ok": False, "conflicts": [{"name": next_name}]}
+                if existing and overwrite:
+                    conn.execute("DELETE FROM layouts WHERE id = ?", (int(existing["id"]),))
+
+            if folder is not None:
+                next_folder_id = _get_or_create_folder(conn, folder)
+
+            conn.execute(
+                """
+                UPDATE layouts
+                SET name = ?, description = ?, folder_id = ?, updated_at = datetime('now')
+                WHERE id = ?
+                """,
+                (next_name, next_desc, next_folder_id, int(layout_id)),
+            )
+            conn.commit()
+            return {"ok": True, "id": int(layout_id), "name": next_name}
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+
+def delete_layout(layout_id: int) -> Dict:
+    with _lock:
+        conn = _connect()
+        try:
+            cur = conn.execute("DELETE FROM layouts WHERE id = ?", (int(layout_id),))
+            conn.commit()
+            if cur.rowcount == 0:
+                return {"ok": False, "error": "Not found"}
+            return {"ok": True}
+        finally:
+            conn.close()
+
+
+def rename_layout_folder(name: str, new_name: str) -> Dict:
+    old = _normalize_folder_name(name)
+    new = _normalize_folder_name(new_name)
+    if _is_uncategorised(old):
+        return {"ok": False, "error": "Cannot rename Uncategorised"}
+    if not new or _is_uncategorised(new):
+        return {"ok": False, "error": "Invalid name"}
+    if old.casefold() == new.casefold():
+        return {"ok": True, "name": new}
+
+    with _lock:
+        conn = _connect()
+        try:
+            conn.execute("BEGIN")
+            row = conn.execute(
+                "SELECT id FROM layout_folders WHERE name = ? COLLATE NOCASE",
+                (old,),
+            ).fetchone()
+            if not row:
+                conn.rollback()
+                return {"ok": False, "error": "Not found"}
+            existing = conn.execute(
+                "SELECT id FROM layout_folders WHERE name = ? COLLATE NOCASE",
+                (new,),
+            ).fetchone()
+            if existing:
+                conn.rollback()
+                return {"ok": False, "conflicts": [{"name": new}]}
+            conn.execute(
+                "UPDATE layout_folders SET name = ? WHERE id = ?",
+                (new, int(row["id"])),
+            )
+            conn.commit()
+            return {"ok": True, "name": new}
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+
+def delete_layout_folder(name: str) -> Dict:
+    title = _normalize_folder_name(name)
+    if _is_uncategorised(title):
+        return {"ok": False, "error": "Cannot delete Uncategorised"}
+
+    with _lock:
+        conn = _connect()
+        try:
+            conn.execute("BEGIN")
+            row = conn.execute(
+                "SELECT id FROM layout_folders WHERE name = ? COLLATE NOCASE",
+                (title,),
+            ).fetchone()
+            if not row:
+                conn.rollback()
+                return {"ok": False, "error": "Not found"}
+            count = conn.execute(
+                "SELECT COUNT(*) AS c FROM layouts WHERE folder_id = ?",
+                (int(row["id"]),),
+            ).fetchone()["c"]
+            conn.execute("DELETE FROM layout_folders WHERE id = ?", (int(row["id"]),))
+            conn.commit()
+            return {"ok": True, "moved": int(count)}
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+
+def update_preset(
+    preset_id: int,
+    title: Optional[str] = None,
+    description: Optional[str] = None,
+    category: Optional[str] = None,
+    overwrite: bool = False,
+) -> Dict:
+    with _lock:
+        conn = _connect()
+        try:
+            conn.execute("BEGIN")
+            row = conn.execute(
+                """
+                SELECT presets.*, categories.name AS category
+                FROM presets
+                JOIN categories ON categories.id = presets.category_id
+                WHERE presets.id = ?
+                """,
+                (int(preset_id),),
+            ).fetchone()
+            if not row:
+                conn.rollback()
+                return {"ok": False, "error": "Not found"}
+
+            next_title = row["title"] if title is None else (title or "").strip()
+            next_desc = row["description"] if description is None else (description or "").strip()
+            category_id = int(row["category_id"])
+            shelf = row["category"]
+            if not next_title:
+                conn.rollback()
+                return {"ok": False, "error": "Name is required"}
+
+            if category is not None:
+                shelf = (category or "").strip()
+                if not shelf:
+                    conn.rollback()
+                    return {"ok": False, "error": "Collection is required"}
+                category_id, _created = _get_or_create_category(conn, shelf)
+
+            if (
+                title is not None
+                and next_title.casefold() != (row["title"] or "").casefold()
+            ) or (category is not None and category_id != int(row["category_id"])):
+                existing = conn.execute(
+                    """
+                    SELECT id FROM presets
+                    WHERE category_id = ? AND title = ? COLLATE NOCASE AND id != ?
+                    """,
+                    (category_id, next_title, int(preset_id)),
+                ).fetchone()
+                if existing and not overwrite:
+                    conn.rollback()
+                    return {"ok": False, "conflicts": [{"name": next_title, "category": shelf}]}
+                if existing and overwrite:
+                    conn.execute("DELETE FROM presets WHERE id = ?", (int(existing["id"]),))
+
+            conn.execute(
+                """
+                UPDATE presets
+                SET category_id = ?, title = ?, description = ?, updated_at = datetime('now')
+                WHERE id = ?
+                """,
+                (category_id, next_title, next_desc, int(preset_id)),
+            )
+            conn.commit()
+            return {"ok": True, "id": int(preset_id), "title": next_title, "category": shelf}
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+
+def delete_preset(preset_id: int) -> Dict:
+    with _lock:
+        conn = _connect()
+        try:
+            cur = conn.execute("DELETE FROM presets WHERE id = ?", (int(preset_id),))
+            conn.commit()
+            if cur.rowcount == 0:
+                return {"ok": False, "error": "Not found"}
+            return {"ok": True}
+        finally:
+            conn.close()
+
+
+def rename_category(name: str, new_name: str) -> Dict:
+    old = (name or "").strip()
+    new = (new_name or "").strip()
+    if not old:
+        return {"ok": False, "error": "Not found"}
+    if not new:
+        return {"ok": False, "error": "Invalid name"}
+    if old.casefold() == new.casefold():
+        return {"ok": True, "name": new}
+
+    with _lock:
+        conn = _connect()
+        try:
+            conn.execute("BEGIN")
+            row = conn.execute(
+                "SELECT id FROM categories WHERE name = ? COLLATE NOCASE",
+                (old,),
+            ).fetchone()
+            if not row:
+                conn.rollback()
+                return {"ok": False, "error": "Not found"}
+            existing = conn.execute(
+                "SELECT id FROM categories WHERE name = ? COLLATE NOCASE",
+                (new,),
+            ).fetchone()
+            if existing:
+                conn.rollback()
+                return {"ok": False, "conflicts": [{"name": new}]}
+            conn.execute(
+                "UPDATE categories SET name = ? WHERE id = ?",
+                (new, int(row["id"])),
+            )
+            conn.commit()
+            return {"ok": True, "name": new}
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+
+def delete_category(name: str) -> Dict:
+    shelf = (name or "").strip()
+    if not shelf:
+        return {"ok": False, "error": "Not found"}
+
+    with _lock:
+        conn = _connect()
+        try:
+            conn.execute("BEGIN")
+            row = conn.execute(
+                "SELECT id FROM categories WHERE name = ? COLLATE NOCASE",
+                (shelf,),
+            ).fetchone()
+            if not row:
+                conn.rollback()
+                return {"ok": False, "error": "Not found"}
+            count = conn.execute(
+                "SELECT COUNT(*) AS c FROM presets WHERE category_id = ?",
+                (int(row["id"]),),
+            ).fetchone()["c"]
+            conn.execute("DELETE FROM categories WHERE id = ?", (int(row["id"]),))
+            conn.commit()
+            return {"ok": True, "deleted": int(count)}
+        except Exception:
+            conn.rollback()
+            raise
         finally:
             conn.close()

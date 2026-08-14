@@ -95,14 +95,138 @@ async def list_categories(request):
     return web.json_response(result)
 
 
+async def update_layout(request):
+    try:
+        payload = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "Invalid JSON"}, status=400)
+    if not isinstance(payload, dict) or not payload.get("id"):
+        return web.json_response({"ok": False, "error": "Invalid JSON"}, status=400)
+    try:
+        result = db.update_layout(
+            int(payload["id"]),
+            name=payload["name"] if "name" in payload else None,
+            description=payload["description"] if "description" in payload else None,
+            folder=payload["folder"] if "folder" in payload else None,
+            overwrite=bool(payload.get("overwrite")),
+        )
+    except Exception as exc:
+        return web.json_response({"ok": False, "error": str(exc)}, status=500)
+    status = 200 if result.get("ok") else 409 if result.get("conflicts") else 400
+    return web.json_response(result, status=status)
+
+
+async def delete_layout(request):
+    layout_id = request.rel_url.query.get("id")
+    if not layout_id:
+        return web.json_response({"ok": False, "error": "Missing id"}, status=400)
+    try:
+        result = db.delete_layout(int(layout_id))
+    except Exception as exc:
+        return web.json_response({"ok": False, "error": str(exc)}, status=500)
+    status = 200 if result.get("ok") else 404 if result.get("error") == "Not found" else 400
+    return web.json_response(result, status=status)
+
+
+async def update_layout_folder(request):
+    try:
+        payload = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "Invalid JSON"}, status=400)
+    if not isinstance(payload, dict):
+        return web.json_response({"ok": False, "error": "Invalid JSON"}, status=400)
+    try:
+        result = db.rename_layout_folder(payload.get("name") or "", payload.get("new_name") or "")
+    except Exception as exc:
+        return web.json_response({"ok": False, "error": str(exc)}, status=500)
+    status = 200 if result.get("ok") else 409 if result.get("conflicts") else 400
+    return web.json_response(result, status=status)
+
+
+async def delete_layout_folder(request):
+    name = request.rel_url.query.get("name") or ""
+    try:
+        result = db.delete_layout_folder(name)
+    except Exception as exc:
+        return web.json_response({"ok": False, "error": str(exc)}, status=500)
+    status = 200 if result.get("ok") else 400
+    return web.json_response(result, status=status)
+
+
+async def update_preset(request):
+    try:
+        payload = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "Invalid JSON"}, status=400)
+    if not isinstance(payload, dict) or not payload.get("id"):
+        return web.json_response({"ok": False, "error": "Invalid JSON"}, status=400)
+    try:
+        result = db.update_preset(
+            int(payload["id"]),
+            title=payload["title"] if "title" in payload else None,
+            description=payload["description"] if "description" in payload else None,
+            category=payload["category"] if "category" in payload else None,
+            overwrite=bool(payload.get("overwrite")),
+        )
+    except Exception as exc:
+        return web.json_response({"ok": False, "error": str(exc)}, status=500)
+    status = 200 if result.get("ok") else 409 if result.get("conflicts") else 400
+    return web.json_response(result, status=status)
+
+
+async def delete_preset(request):
+    preset_id = request.rel_url.query.get("id")
+    if not preset_id:
+        return web.json_response({"ok": False, "error": "Missing id"}, status=400)
+    try:
+        result = db.delete_preset(int(preset_id))
+    except Exception as exc:
+        return web.json_response({"ok": False, "error": str(exc)}, status=500)
+    status = 200 if result.get("ok") else 404 if result.get("error") == "Not found" else 400
+    return web.json_response(result, status=status)
+
+
+async def update_category(request):
+    try:
+        payload = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "Invalid JSON"}, status=400)
+    if not isinstance(payload, dict):
+        return web.json_response({"ok": False, "error": "Invalid JSON"}, status=400)
+    try:
+        result = db.rename_category(payload.get("name") or "", payload.get("new_name") or "")
+    except Exception as exc:
+        return web.json_response({"ok": False, "error": str(exc)}, status=500)
+    status = 200 if result.get("ok") else 409 if result.get("conflicts") else 400
+    return web.json_response(result, status=status)
+
+
+async def delete_category(request):
+    name = request.rel_url.query.get("name") or ""
+    try:
+        result = db.delete_category(name)
+    except Exception as exc:
+        return web.json_response({"ok": False, "error": str(exc)}, status=500)
+    status = 200 if result.get("ok") else 400
+    return web.json_response(result, status=status)
+
+
 _existing = {getattr(route, "path", None) for route in PromptServer.instance.routes}
 if SAVE_ROUTE not in _existing:
     PromptServer.instance.routes.post(SAVE_ROUTE)(save_layout)
     PromptServer.instance.routes.get(LIST_ROUTE)(list_layouts)
+    PromptServer.instance.routes.patch(SAVE_ROUTE)(update_layout)
+    PromptServer.instance.routes.delete(SAVE_ROUTE)(delete_layout)
 if FOLDERS_ROUTE not in _existing:
     PromptServer.instance.routes.get(FOLDERS_ROUTE)(list_layout_folders)
+    PromptServer.instance.routes.patch(FOLDERS_ROUTE)(update_layout_folder)
+    PromptServer.instance.routes.delete(FOLDERS_ROUTE)(delete_layout_folder)
 if PRESETS_ROUTE not in _existing:
     PromptServer.instance.routes.post(PRESETS_ROUTE)(save_preset)
     PromptServer.instance.routes.get(PRESETS_ROUTE)(list_presets)
+    PromptServer.instance.routes.patch(PRESETS_ROUTE)(update_preset)
+    PromptServer.instance.routes.delete(PRESETS_ROUTE)(delete_preset)
 if CATEGORIES_ROUTE not in _existing:
     PromptServer.instance.routes.get(CATEGORIES_ROUTE)(list_categories)
+    PromptServer.instance.routes.patch(CATEGORIES_ROUTE)(update_category)
+    PromptServer.instance.routes.delete(CATEGORIES_ROUTE)(delete_category)

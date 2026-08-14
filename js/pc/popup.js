@@ -360,6 +360,140 @@ const CSS = `
   display: none;
 }
 
+.pc-mgr-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.pc-mgr-tab {
+  flex: 1 1 0;
+  height: 28px;
+  border: 1px solid var(--border-color, #444);
+  border-radius: 6px;
+  background: var(--comfy-input-bg, #2a2a2e);
+  color: var(--descrip-text, #aaa);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pc-mgr-tab.active {
+  color: var(--input-text, #ddd);
+  border-color: #6d5aa8;
+  background: #2f2b3d;
+}
+
+.pc-mgr-list {
+  min-height: 120px;
+}
+
+.pc-mgr-folder-head {
+  cursor: default;
+}
+
+.pc-mgr-folder-head:hover {
+  background: transparent;
+}
+
+.pc-mgr-folder-toggle {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 28px;
+  padding: 0 4px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pc-mgr-folder-toggle:hover {
+  background: var(--comfy-input-bg, #2a2a2e);
+}
+
+.pc-mgr-folder-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pc-mgr-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #444);
+  background: var(--comfy-input-bg, #2a2a2e);
+}
+
+.pc-mgr-item-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pc-mgr-item-name {
+  font-size: 12px;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pc-mgr-item-meta {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--descrip-text, #888);
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pc-mgr-item-actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 4px;
+}
+
+.pc-mgr-icon-btn {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--descrip-text, #888);
+  cursor: pointer;
+  padding: 0;
+}
+
+.pc-mgr-icon-btn:hover {
+  color: var(--input-text, #ddd);
+  background: var(--comfy-menu-bg, #1e1e1e);
+  border-color: var(--border-color, #444);
+}
+
+.pc-mgr-icon-btn.danger:hover {
+  color: #e07070;
+  border-color: #7a3a3a;
+}
+
+.pc-mgr-icon-btn svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
 .pc-preset-item {
   display: flex;
   flex-direction: column;
@@ -592,12 +726,14 @@ export function openInputPopup({
   initialValue = "",
   validate,
   onSubmit,
+  nested = false,
 } = {}) {
   return openPopup({
     anchor,
     position,
     title,
     width: 280,
+    nested,
     render(body, { close }) {
       const input = document.createElement("input");
       input.className = "pc-popup-input";
@@ -667,12 +803,14 @@ export function openConfirmPopup({
   showCancel = true,
   danger = true,
   onConfirm,
+  nested = false,
 } = {}) {
   return openPopup({
     anchor,
     position,
     title,
     width: 280,
+    nested,
     render(body, { close }) {
       const text = document.createElement("div");
       text.className = "pc-popup-message";

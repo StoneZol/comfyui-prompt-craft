@@ -8,6 +8,7 @@ import { openSavePresetsPopup } from "./pc/save_dialog.js";
 import { confirmReplaceGroups, openLoadPresetPopup } from "./pc/load_dialog.js";
 import { openSavePairPopup } from "./pc/pair_save.js";
 import { confirmReplacePair, openLoadPairPopup } from "./pc/pair_load.js";
+import { openManagerPopup } from "./pc/manager_dialog.js";
 import {
   createShadowString,
   hideOnCanvasKeepInPanel,
@@ -21,7 +22,7 @@ injectStyles(config.style_id);
 
 const MIN_NODE_WIDTH = 400;
 const SOCKET_ROWS_HEIGHT = 56;
-const HEADER_HEIGHT = 68;
+const HEADER_HEIGHT = 102;
 const CONTAINER_PADDING_V = 10;
 const GAP_BETWEEN_SECTIONS = 8;
 const GROUP_HEIGHT = 266;
@@ -138,7 +139,13 @@ app.registerExtension({
       loadBtn.innerHTML = `${LOAD_ICON_SVG}<span>Load preset</span>`;
 
       libraryRow.append(saveBtn, loadBtn);
-      header.append(addBtn, libraryRow);
+
+      const managerBtn = document.createElement("button");
+      managerBtn.type = "button";
+      managerBtn.className = "pc-manage-btn";
+      managerBtn.textContent = "Manage library";
+
+      header.append(addBtn, libraryRow, managerBtn);
 
       const groupsWrap = document.createElement("div");
       groupsWrap.className = "pc-groups";
@@ -462,6 +469,11 @@ app.registerExtension({
             applyLayout(layout);
           },
         });
+      });
+
+      managerBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openManagerPopup({ anchor: managerBtn });
       });
 
       const onResize = node.onResize;

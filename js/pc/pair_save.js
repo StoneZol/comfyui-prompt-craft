@@ -1,5 +1,5 @@
 import { openConfirmPopup, openPopup } from "./popup.js";
-import { listCategories, savePreset } from "./api.js";
+import { listCategories, savePreset, shelfNames } from "./api.js";
 
 function matchesCategory(name, query) {
   if (!query) return true;
@@ -243,7 +243,7 @@ export function openSavePairPopup({ anchor, group }) {
 
       listCategories()
         .then((result) => {
-          categories = result.categories || [];
+          categories = shelfNames(result.categories);
           if (
             defaultCategory &&
             !categories.some((name) => name.toLowerCase() === defaultCategory.toLowerCase())
