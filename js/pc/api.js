@@ -94,11 +94,19 @@ export async function listPresets({ category = "" } = {}) {
   return readJson(res);
 }
 
-export async function updatePreset({ id, title, description, category, overwrite = false }) {
+export async function updatePreset({
+  id,
+  title,
+  description,
+  category,
+  positive,
+  negative,
+  overwrite = false,
+}) {
   const res = await fetch(PRESETS_URL, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id, title, description, category, overwrite }),
+    body: JSON.stringify({ id, title, description, category, positive, negative, overwrite }),
   });
   return readJson(res);
 }

@@ -24,6 +24,53 @@ const CSS = `
   z-index: 11100;
 }
 
+.pc-popup-centered {
+  max-width: min(480px, calc(100vw - 16px));
+  max-height: 75vh;
+  overflow: hidden;
+}
+
+.pc-popup-centered .pc-popup-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.pc-popup-fixed {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.pc-popup-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 2px;
+}
+
+.pc-popup-footer {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border-color, #444);
+}
+
+.pc-popup-footer .pc-popup-actions {
+  align-self: flex-end;
+}
+
 .pc-popup-title {
   flex: 0 0 auto;
   font-size: 11px;
@@ -494,6 +541,31 @@ const CSS = `
   display: block;
 }
 
+.pc-mgr-prompt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pc-mgr-prompt-label {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+.pc-mgr-prompt-label.positive {
+  color: #6bbf7a;
+}
+
+.pc-mgr-prompt-label.negative {
+  color: #e07070;
+}
+
+.pc-mgr-prompt-area {
+  min-height: 64px;
+  max-height: min(25vh, 240px);
+  resize: vertical;
+}
+
 .pc-preset-item {
   display: flex;
   flex-direction: column;
@@ -585,40 +657,50 @@ const CSS = `
 `;
 
 function injectPopupStyles() {
-  if (document.getElementById(STYLE_ID)) return;
-  const style = document.createElement("style");
-  style.id = STYLE_ID;
-  style.textContent = CSS;
-  document.head.appendChild(style);
+    if (document.getElementById(STYLE_ID)) return;
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = CSS;
+    document.head.appendChild(style);
 }
 
 const popupStack = [];
 
-function placePopup(el, { anchor, position }) {
-  const margin = 8;
-  const gap = 4;
-  let x = position?.x ?? margin;
-  let y = position?.y ?? margin;
-  let anchorRect = null;
-  if (anchor?.getBoundingClientRect) {
-    anchorRect = anchor.getBoundingClientRect();
-    y = anchorRect.bottom + gap;
-  }
+function placePopup(el, { anchor, position, centered }) {
+    const margin = 8;
+    const gap = 4;
+    let x = position?.x ?? margin;
+    let y = position?.y ?? margin;
+    let anchorRect = null;
+    if (!centered && anchor?.getBoundingClientRect) {
+        anchorRect = anchor.getBoundingClientRect();
+        y = anchorRect.bottom + gap;
+    }
 
-  el.style.left = `${x}px`;
-  el.style.top = `${y}px`;
-  el.style.visibility = "hidden";
-  document.body.appendChild(el);
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    el.style.visibility = "hidden";
+    document.body.appendChild(el);
 
-  const box = el.getBoundingClientRect();
-  if (anchorRect) {
-    x = anchorRect.left + (anchorRect.width - box.width) / 2;
-  }
-  const maxX = window.innerWidth - box.width - margin;
-  const maxY = window.innerHeight - box.height - margin;
-  el.style.left = `${Math.max(margin, Math.min(x, maxX))}px`;
-  el.style.top = `${Math.max(margin, Math.min(y, maxY))}px`;
-  el.style.visibility = "visible";
+    const box = el.getBoundingClientRect();
+    if (centered) {
+        x = (window.innerWidth - box.width) / 2;
+        const anchorY = window.innerHeight * 0.4;
+        y = anchorY - box.height / 2;
+        const maxBottom = window.innerHeight - margin;
+        if (y + box.height > maxBottom)
+            y = maxBottom - box.height;
+        if (y < margin) y = margin;
+    } else if (anchorRect) {
+        x =
+            anchorRect.left +
+            (anchorRect.width - box.width) / 2;
+    }
+    const maxX = window.innerWidth - box.width - margin;
+    const maxY = window.innerHeight - box.height - margin;
+    el.style.left = `${Math.max(margin, Math.min(x, maxX))}px`;
+    el.style.top = `${Math.max(margin, Math.min(y, maxY))}px`;
+    el.style.visibility = "visible";
 }
 
 /**
@@ -632,216 +714,254 @@ function placePopup(el, { anchor, position }) {
  * @param {string} [opts.title]
  * @param {number} [opts.width]
  * @param {boolean} [opts.nested]
+ * @param {boolean} [opts.centered]
  * @param {(body: HTMLElement, api: { close: () => void, root: HTMLElement, setTitle: (t: string) => void }) => void} opts.render
  * @param {() => void} [opts.onClose]
  */
 export function openPopup(opts) {
-  injectPopupStyles();
-  if (!opts.nested) {
-    while (popupStack.length) popupStack[popupStack.length - 1].close();
-  }
-
-  const root = document.createElement("div");
-  root.className = "pc-popup-root";
-  if (opts.nested) root.classList.add("pc-popup-nested");
-  if (opts.width) root.style.width = `${opts.width}px`;
-  root.addEventListener("pointerdown", (e) => e.stopPropagation());
-  root.addEventListener("wheel", (e) => e.stopPropagation(), { passive: true });
-
-  const titleEl = document.createElement("div");
-  titleEl.className = "pc-popup-title";
-  if (opts.title) titleEl.textContent = opts.title;
-  else titleEl.style.display = "none";
-
-  const body = document.createElement("div");
-  body.className = "pc-popup-body";
-
-  root.append(titleEl, body);
-
-  let closed = false;
-  function close() {
-    if (closed) return;
-    closed = true;
-    while (popupStack.length && popupStack[popupStack.length - 1] !== api) {
-      popupStack[popupStack.length - 1].close();
+    injectPopupStyles();
+    if (!opts.nested) {
+        while (popupStack.length)
+            popupStack[popupStack.length - 1].close();
     }
-    const index = popupStack.indexOf(api);
-    if (index >= 0) popupStack.splice(index, 1);
-    document.removeEventListener("pointerdown", onDocDown, true);
-    document.removeEventListener("keydown", onKey, true);
-    root.remove();
-    opts.onClose?.();
-  }
 
-  function onDocDown(e) {
-    if (popupStack[popupStack.length - 1] !== api) return;
-    if (e.target?.closest?.(".pc-prompt-tip")) return;
-    if (root.contains(e.target) || e.target === opts.anchor) return;
-    const inStack = popupStack.some((item) => item.root.contains(e.target));
-    if (inStack) {
-      close();
-      return;
+    const root = document.createElement("div");
+    root.className = "pc-popup-root";
+    if (opts.nested) root.classList.add("pc-popup-nested");
+    if (opts.centered)
+        root.classList.add("pc-popup-centered");
+    if (opts.width) root.style.width = `${opts.width}px`;
+    root.addEventListener("pointerdown", (e) =>
+        e.stopPropagation(),
+    );
+    root.addEventListener(
+        "wheel",
+        (e) => e.stopPropagation(),
+        { passive: true },
+    );
+
+    const titleEl = document.createElement("div");
+    titleEl.className = "pc-popup-title";
+    if (opts.title) titleEl.textContent = opts.title;
+    else titleEl.style.display = "none";
+
+    const body = document.createElement("div");
+    body.className = "pc-popup-body";
+
+    root.append(titleEl, body);
+
+    let closed = false;
+    function close() {
+        if (closed) return;
+        closed = true;
+        while (
+            popupStack.length &&
+            popupStack[popupStack.length - 1] !== api
+        ) {
+            popupStack[popupStack.length - 1].close();
+        }
+        const index = popupStack.indexOf(api);
+        if (index >= 0) popupStack.splice(index, 1);
+        document.removeEventListener(
+            "pointerdown",
+            onDocDown,
+            true,
+        );
+        document.removeEventListener(
+            "keydown",
+            onKey,
+            true,
+        );
+        root.remove();
+        opts.onClose?.();
     }
-    if (popupStack[0] && popupStack[0] !== api) {
-      popupStack[0].close();
-      return;
+
+    function onDocDown(e) {
+        if (popupStack[popupStack.length - 1] !== api)
+            return;
+        if (e.target?.closest?.(".pc-prompt-tip")) return;
+        if (
+            root.contains(e.target) ||
+            e.target === opts.anchor
+        )
+            return;
+        const inStack = popupStack.some((item) =>
+            item.root.contains(e.target),
+        );
+        if (inStack) {
+            close();
+            return;
+        }
+        if (popupStack[0] && popupStack[0] !== api) {
+            popupStack[0].close();
+            return;
+        }
+        close();
     }
-    close();
-  }
 
-  function onKey(e) {
-    if (e.key !== "Escape") return;
-    if (popupStack[popupStack.length - 1] !== api) return;
-    e.preventDefault();
-    e.stopPropagation();
-    close();
-  }
+    function onKey(e) {
+        if (e.key !== "Escape") return;
+        if (popupStack[popupStack.length - 1] !== api)
+            return;
+        e.preventDefault();
+        e.stopPropagation();
+        close();
+    }
 
-  const api = {
-    close,
-    root,
-    setTitle(text) {
-      titleEl.style.display = text ? "" : "none";
-      titleEl.textContent = text || "";
-    },
-  };
+    const api = {
+        close,
+        root,
+        setTitle(text) {
+            titleEl.style.display = text ? "" : "none";
+            titleEl.textContent = text || "";
+        },
+    };
 
-  popupStack.push(api);
-  opts.render?.(body, api);
-  placePopup(root, opts);
-  document.addEventListener("pointerdown", onDocDown, true);
-  document.addEventListener("keydown", onKey, true);
-  return api;
+    popupStack.push(api);
+    opts.render?.(body, api);
+    placePopup(root, opts);
+    document.addEventListener(
+        "pointerdown",
+        onDocDown,
+        true,
+    );
+    document.addEventListener("keydown", onKey, true);
+    return api;
 }
 
 /**
  * Name/value prompt built on openPopup.
  */
 export function openInputPopup({
-  anchor,
-  position,
-  title = "Name",
-  placeholder = "",
-  confirmLabel = "Add",
-  initialValue = "",
-  validate,
-  onSubmit,
-  nested = false,
-} = {}) {
-  return openPopup({
     anchor,
     position,
-    title,
-    width: 280,
-    nested,
-    render(body, { close }) {
-      const input = document.createElement("input");
-      input.className = "pc-popup-input";
-      input.type = "text";
-      input.placeholder = placeholder;
-      input.value = initialValue;
+    title = "Name",
+    placeholder = "",
+    confirmLabel = "Add",
+    initialValue = "",
+    validate,
+    onSubmit,
+    nested = false,
+} = {}) {
+    return openPopup({
+        anchor,
+        position,
+        title,
+        width: 280,
+        nested,
+        render(body, { close }) {
+            const input = document.createElement("input");
+            input.className = "pc-popup-input";
+            input.type = "text";
+            input.placeholder = placeholder;
+            input.value = initialValue;
 
-      const errorEl = document.createElement("div");
-      errorEl.className = "pc-popup-error";
+            const errorEl = document.createElement("div");
+            errorEl.className = "pc-popup-error";
 
-      const actions = document.createElement("div");
-      actions.className = "pc-popup-actions";
+            const actions = document.createElement("div");
+            actions.className = "pc-popup-actions";
 
-      const confirm = document.createElement("button");
-      confirm.type = "button";
-      confirm.className = "pc-popup-btn primary";
-      confirm.textContent = confirmLabel;
+            const confirm =
+                document.createElement("button");
+            confirm.type = "button";
+            confirm.className = "pc-popup-btn primary";
+            confirm.textContent = confirmLabel;
 
-      function showError(message) {
-        errorEl.textContent = message || "";
-        input.classList.toggle("invalid", !!message);
-      }
+            function showError(message) {
+                errorEl.textContent = message || "";
+                input.classList.toggle(
+                    "invalid",
+                    !!message,
+                );
+            }
 
-      function submit() {
-        const value = input.value.trim();
-        const error = validate?.(value);
-        if (error) {
-          showError(error);
-          input.focus();
-          return;
-        }
-        close();
-        onSubmit?.(value);
-      }
+            function submit() {
+                const value = input.value.trim();
+                const error = validate?.(value);
+                if (error) {
+                    showError(error);
+                    input.focus();
+                    return;
+                }
+                close();
+                onSubmit?.(value);
+            }
 
-      confirm.addEventListener("click", (e) => {
-        e.stopPropagation();
-        submit();
-      });
-      input.addEventListener("input", () => {
-        if (errorEl.textContent) showError("");
-      });
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          submit();
-        }
-      });
+            confirm.addEventListener("click", (e) => {
+                e.stopPropagation();
+                submit();
+            });
+            input.addEventListener("input", () => {
+                if (errorEl.textContent) showError("");
+            });
+            input.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    submit();
+                }
+            });
 
-      actions.appendChild(confirm);
-      body.append(input, errorEl, actions);
-      requestAnimationFrame(() => input.focus());
-    },
-  });
+            actions.appendChild(confirm);
+            body.append(input, errorEl, actions);
+            requestAnimationFrame(() => input.focus());
+        },
+    });
 }
 
 /**
  * Confirm / cancel prompt built on openPopup.
  */
 export function openConfirmPopup({
-  anchor,
-  position,
-  title = "Confirm",
-  message = "",
-  confirmLabel = "Delete",
-  cancelLabel = "Cancel",
-  showCancel = true,
-  danger = true,
-  onConfirm,
-  nested = false,
-} = {}) {
-  return openPopup({
     anchor,
     position,
-    title,
-    width: 280,
-    nested,
-    render(body, { close }) {
-      const text = document.createElement("div");
-      text.className = "pc-popup-message";
-      text.textContent = message;
+    title = "Confirm",
+    message = "",
+    confirmLabel = "Delete",
+    cancelLabel = "Cancel",
+    showCancel = true,
+    danger = true,
+    onConfirm,
+    nested = false,
+} = {}) {
+    return openPopup({
+        anchor,
+        position,
+        title,
+        width: 280,
+        nested,
+        render(body, { close }) {
+            const text = document.createElement("div");
+            text.className = "pc-popup-message";
+            text.textContent = message;
 
-      const actions = document.createElement("div");
-      actions.className = "pc-popup-actions";
+            const actions = document.createElement("div");
+            actions.className = "pc-popup-actions";
 
-      const cancel = document.createElement("button");
-      cancel.type = "button";
-      cancel.className = "pc-popup-btn";
-      cancel.textContent = cancelLabel;
-      cancel.addEventListener("click", (e) => {
-        e.stopPropagation();
-        close();
-      });
+            const cancel = document.createElement("button");
+            cancel.type = "button";
+            cancel.className = "pc-popup-btn";
+            cancel.textContent = cancelLabel;
+            cancel.addEventListener("click", (e) => {
+                e.stopPropagation();
+                close();
+            });
 
-      const confirm = document.createElement("button");
-      confirm.type = "button";
-      confirm.className = `pc-popup-btn ${danger ? "danger" : "primary"}`;
-      confirm.textContent = confirmLabel;
-      confirm.addEventListener("click", (e) => {
-        e.stopPropagation();
-        close();
-        onConfirm?.();
-      });
+            const confirm =
+                document.createElement("button");
+            confirm.type = "button";
+            confirm.className = `pc-popup-btn ${danger ? "danger" : "primary"}`;
+            confirm.textContent = confirmLabel;
+            confirm.addEventListener("click", (e) => {
+                e.stopPropagation();
+                close();
+                onConfirm?.();
+            });
 
-      if (showCancel) actions.appendChild(cancel);
-      actions.appendChild(confirm);
-      body.append(text, actions);
-      requestAnimationFrame(() => confirm.focus());
-    },
-  });
+            if (showCancel) actions.appendChild(cancel);
+            actions.appendChild(confirm);
+            body.append(text, actions);
+            requestAnimationFrame(() => confirm.focus());
+        },
+    });
 }

@@ -166,6 +166,8 @@ async def update_preset(request):
             title=payload["title"] if "title" in payload else None,
             description=payload["description"] if "description" in payload else None,
             category=payload["category"] if "category" in payload else None,
+            positive=payload["positive"] if "positive" in payload else None,
+            negative=payload["negative"] if "negative" in payload else None,
             overwrite=bool(payload.get("overwrite")),
         )
     except Exception as exc:

@@ -22,7 +22,7 @@ injectStyles(config.style_id);
 
 const MIN_NODE_WIDTH = 400;
 const SOCKET_ROWS_HEIGHT = 56;
-const HEADER_HEIGHT = 102;
+const HEADER_HEIGHT = 112;
 const CONTAINER_PADDING_V = 10;
 const GAP_BETWEEN_SECTIONS = 8;
 const GROUP_HEIGHT = 266;

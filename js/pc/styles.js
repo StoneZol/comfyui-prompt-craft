@@ -91,12 +91,14 @@ const CSS = `
 
 .pc-manage-btn {
   width: 100%;
-  height: 28px;
-  border: 1px solid var(--border-color, #444);
-  background: transparent;
-  color: var(--descrip-text, #aaa);
-  font-size: 11px;
-  letter-spacing: 0.02em;
+  height: 26px;
+  min-height: 26px;
+  padding: 0 14px;
+  border: 1px solid #5a5080;
+  background: #2f2b3d;
+  color: #e0dce8;
+  font-size: 13px;
+  letter-spacing: 0.01em;
 }
 
 .pc-add-btn:hover,

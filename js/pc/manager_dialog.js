@@ -367,12 +367,30 @@ function openEditLayoutPopup({ anchor, layout, folders, onSaved }) {
   });
 }
 
-function openEditPromptPopup({ anchor, preset, categories, onSaved }) {
+function makePromptField(labelText, kind, value) {
+  const wrap = document.createElement("div");
+  wrap.className = "pc-mgr-prompt-field";
+
+  const label = document.createElement("div");
+  label.className = `pc-mgr-prompt-label ${kind}`;
+  label.textContent = labelText;
+
+  const area = document.createElement("textarea");
+  area.className = "pc-popup-textarea pc-mgr-prompt-area";
+  area.placeholder = labelText;
+  area.rows = 4;
+  area.value = value || "";
+
+  wrap.append(label, area);
+  return { wrap, area };
+}
+
+function openEditPromptPopup({ preset, categories, onSaved }) {
   return openPopup({
     nested: true,
-    anchor,
+    centered: true,
     title: "Edit prompt",
-    width: 320,
+    width: 440,
     render(body, { close }) {
       const title = document.createElement("input");
       title.className = "pc-popup-input";
@@ -402,9 +420,8 @@ function openEditPromptPopup({ anchor, preset, categories, onSaved }) {
       desc.rows = 3;
       desc.value = preset.description || "";
 
-      const hint = document.createElement("div");
-      hint.className = "pc-popup-message";
-      hint.textContent = "Positive / negative text is edited on the node or via Load pair.";
+      const pos = makePromptField("positive", "positive", preset.positive);
+      const neg = makePromptField("negative", "negative", preset.negative);
 
       const errorEl = document.createElement("div");
       errorEl.className = "pc-popup-error";
@@ -454,6 +471,11 @@ function openEditPromptPopup({ anchor, preset, categories, onSaved }) {
           category.focus();
           return;
         }
+        if (!pos.area.value.trim() && !neg.area.value.trim()) {
+          errorEl.textContent = "Write a prompt first";
+          pos.area.focus();
+          return;
+        }
         confirm.disabled = true;
         try {
           const result = await updatePreset({
@@ -461,6 +483,8 @@ function openEditPromptPopup({ anchor, preset, categories, onSaved }) {
             title: nextTitle,
             description: desc.value.trim(),
             category: shelf,
+            positive: pos.area.value,
+            negative: neg.area.value,
             overwrite,
           });
           if (result.conflicts?.length) {
@@ -496,7 +520,20 @@ function openEditPromptPopup({ anchor, preset, categories, onSaved }) {
       });
 
       actions.appendChild(confirm);
-      body.append(title, categoryRow, desc, hint, errorEl, actions);
+
+      const fixed = document.createElement("div");
+      fixed.className = "pc-popup-fixed";
+      fixed.append(title, categoryRow, desc);
+
+      const scroll = document.createElement("div");
+      scroll.className = "pc-popup-scroll";
+      scroll.append(pos.wrap, neg.wrap);
+
+      const footer = document.createElement("div");
+      footer.className = "pc-popup-footer";
+      footer.append(errorEl, actions);
+
+      body.append(fixed, scroll, footer);
       requestAnimationFrame(() => title.focus());
     },
   });
@@ -764,9 +801,8 @@ function paintPromptsTab(listEl, { presets, categories, showEmpty, query, reload
           makeItemRow(preset, {
             name: preset.title || "Untitled",
             meta: (preset.description || "").trim() || undefined,
-            onEdit: (btn) => {
+            onEdit: () => {
               openEditPromptPopup({
-                anchor: btn,
                 preset,
                 categories: categoryNames,
                 onSaved: reload,

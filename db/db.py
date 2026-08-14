@@ -559,6 +559,8 @@ def update_preset(
     title: Optional[str] = None,
     description: Optional[str] = None,
     category: Optional[str] = None,
+    positive: Optional[str] = None,
+    negative: Optional[str] = None,
     overwrite: bool = False,
 ) -> Dict:
     with _lock:
@@ -580,11 +582,16 @@ def update_preset(
 
             next_title = row["title"] if title is None else (title or "").strip()
             next_desc = row["description"] if description is None else (description or "").strip()
+            next_pos = row["positive"] if positive is None else (positive or "")
+            next_neg = row["negative"] if negative is None else (negative or "")
             category_id = int(row["category_id"])
             shelf = row["category"]
             if not next_title:
                 conn.rollback()
                 return {"ok": False, "error": "Name is required"}
+            if not next_pos.strip() and not next_neg.strip():
+                conn.rollback()
+                return {"ok": False, "error": "Write a prompt first"}
 
             if category is not None:
                 shelf = (category or "").strip()
@@ -613,10 +620,11 @@ def update_preset(
             conn.execute(
                 """
                 UPDATE presets
-                SET category_id = ?, title = ?, description = ?, updated_at = datetime('now')
+                SET category_id = ?, title = ?, description = ?, positive = ?, negative = ?,
+                    updated_at = datetime('now')
                 WHERE id = ?
                 """,
-                (category_id, next_title, next_desc, int(preset_id)),
+                (category_id, next_title, next_desc, next_pos, next_neg, int(preset_id)),
             )
             conn.commit()
             return {"ok": True, "id": int(preset_id), "title": next_title, "category": shelf}
