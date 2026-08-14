@@ -4,5 +4,5 @@
   "node_display_name": "Prompt Craft",
   "style_id": "prompt-craft-styles",
   "log_prefix": "[PromptCraft]",
-  "debug_join": true
+  "debug_join": false
 }
