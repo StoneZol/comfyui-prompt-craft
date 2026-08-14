@@ -238,7 +238,7 @@ export function openSavePairPopup({ anchor, group }) {
       });
 
       actions.appendChild(confirm);
-      body.append(title, desc, categoryRow, errorEl, actions);
+      body.append(title, categoryRow, desc, errorEl, actions);
       requestAnimationFrame(() => title.focus());
 
       listCategories()

@@ -14,6 +14,7 @@ import {
   isShadowFieldName,
   parseShadowFieldName,
 } from "./pc/shadow_fields.js";
+import { craftOutput, isJoinDebugEnabled } from "./pc/join.js";
 
 const config = await loadConfig();
 injectStyles(config.style_id);
@@ -147,6 +148,21 @@ app.registerExtension({
         if (!dataWidget) return;
         dataWidget.value = JSON.stringify(groups);
         node.setDirtyCanvas(true, true);
+        scheduleJoinDebugLog();
+      }
+
+      let joinDebugTimer = null;
+      function scheduleJoinDebugLog() {
+        if (!isJoinDebugEnabled(config)) return;
+        clearTimeout(joinDebugTimer);
+        joinDebugTimer = setTimeout(() => {
+          const { str_pos, str_neg } = craftOutput(groups);
+          console.log(`${config.log_prefix} join preview`, {
+            str_pos,
+            str_neg,
+            groups: groups.length,
+          });
+        }, 300);
       }
 
       function collectFromShadows() {

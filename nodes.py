@@ -64,10 +64,11 @@ class PromptCraft:
         blocks = _parse_blocks(blocks_data)
         positives = [block.get("positive", "") for block in blocks if block.get("enabled", True) is not False]
         negatives = [block.get("negative", "") for block in blocks if block.get("enabled", True) is not False]
-        return (
-            _join_fields(positives, DEFAULT_SEPARATOR),
-            _join_fields(negatives, DEFAULT_SEPARATOR),
-        )
+        str_pos = _join_fields(positives, DEFAULT_SEPARATOR)
+        str_neg = _join_fields(negatives, DEFAULT_SEPARATOR)
+        print(f"[PromptCraft] str_pos ({len(str_pos)}): {str_pos!r}")
+        print(f"[PromptCraft] str_neg ({len(str_neg)}): {str_neg!r}")
+        return (str_pos, str_neg)
 
 
 NODE_CLASS_MAPPINGS = {

@@ -3,5 +3,6 @@
   "node_class": "PromptCraft",
   "node_display_name": "Prompt Craft",
   "style_id": "prompt-craft-styles",
-  "log_prefix": "[PromptCraft]"
+  "log_prefix": "[PromptCraft]",
+  "debug_join": true
 }

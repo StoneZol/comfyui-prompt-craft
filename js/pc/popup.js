@@ -462,13 +462,13 @@ const popupStack = [];
 
 function placePopup(el, { anchor, position }) {
   const margin = 8;
-  let x = position?.x ?? 0;
-  let y = position?.y ?? 0;
+  const gap = 4;
+  let x = position?.x ?? margin;
+  let y = position?.y ?? margin;
   let anchorRect = null;
   if (anchor?.getBoundingClientRect) {
     anchorRect = anchor.getBoundingClientRect();
-    x = anchorRect.left;
-    y = anchorRect.bottom + 4;
+    y = anchorRect.bottom + gap;
   }
 
   el.style.left = `${x}px`;
@@ -477,8 +477,9 @@ function placePopup(el, { anchor, position }) {
   document.body.appendChild(el);
 
   const box = el.getBoundingClientRect();
-  // Right-align to the button so dialogs open leftward, not past the right edge.
-  if (anchorRect) x = anchorRect.right - box.width;
+  if (anchorRect) {
+    x = anchorRect.left + (anchorRect.width - box.width) / 2;
+  }
   const maxX = window.innerWidth - box.width - margin;
   const maxY = window.innerHeight - box.height - margin;
   el.style.left = `${Math.max(margin, Math.min(x, maxX))}px`;

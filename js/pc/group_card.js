@@ -189,10 +189,6 @@ export function makeGroupCard(group, { index = 0, onChange, onRemove, onPrompt, 
       onConfirm: () => onRemove?.(),
     });
   });
-  toolbar.appendChild(removeBtn);
-
-  const spacer = document.createElement("div");
-  spacer.className = "pc-group-toolbar-spacer";
 
   const savePairBtn = document.createElement("button");
   savePairBtn.type = "button";
@@ -214,7 +210,10 @@ export function makeGroupCard(group, { index = 0, onChange, onRemove, onPrompt, 
     onLoadPair?.(loadPairBtn);
   });
 
-  toolbar.append(spacer, savePairBtn, loadPairBtn);
+  const spacer = document.createElement("div");
+  spacer.className = "pc-group-toolbar-spacer";
+
+  toolbar.append(savePairBtn, loadPairBtn, spacer, removeBtn);
 
   const pos = makeField(group, "positive", "positive", { onChange, onPrompt });
   const neg = makeField(group, "negative", "negative", { onChange, onPrompt });

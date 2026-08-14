@@ -34,18 +34,16 @@ export function hidePromptTip() {
 
 function placeTip(tip, anchor) {
   const margin = 8;
+  const gap = 8;
   const rect = anchor.getBoundingClientRect();
   const box = tip.getBoundingClientRect();
-  // Prefer left of the button, then below — avoid sticking out to the right.
-  let left = rect.left - box.width - 8;
-  let top = rect.top;
-  if (left < margin) {
-    left = Math.max(margin, Math.min(rect.left, window.innerWidth - box.width - margin));
-    top = rect.bottom + 8;
-  }
+  let left = rect.left + (rect.width - box.width) / 2;
+  let top = rect.bottom + gap;
   if (top + box.height > window.innerHeight - margin) {
-    top = Math.max(margin, window.innerHeight - box.height - margin);
+    top = rect.top - box.height - gap;
   }
+  left = Math.max(margin, Math.min(left, window.innerWidth - box.width - margin));
+  top = Math.max(margin, Math.min(top, window.innerHeight - box.height - margin));
   tip.style.left = `${left}px`;
   tip.style.top = `${top}px`;
 }
