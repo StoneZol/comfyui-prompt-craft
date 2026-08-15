@@ -1,14 +1,14 @@
 [project]
 name = "comfyui-prompt-craft"
 description = "Stop wrestling with megaprompts. Stack modular blocks (skin, light, outfit…) into clean str_pos/str_neg, pin fields to the sidebar, and reuse prompts from a built-in SQLite library — layouts, pairs, and a full manager included."
-version = "1.0.0"
+version = "1.0.1"
 license = { file = "LICENSE" }
 requires-python = ">=3.8"
 dependencies = []
 
 [project.urls]
 Repository = "https://github.com/StoneZol/comfyui-prompt-craft"
-Homepage = "https://github.com/StoneZol/comfyui-prompt-craft"
+"Bug Tracker" = "https://github.com/StoneZol/comfyui-prompt-craft/issues"
 
 [tool.comfy]
 PublisherId = "stone-zol"

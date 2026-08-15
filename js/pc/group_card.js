@@ -194,7 +194,7 @@ export function makeGroupCard(group, { index = 0, onChange, onRemove, onPrompt, 
   savePairBtn.type = "button";
   savePairBtn.className = "pc-pair-save-btn";
   savePairBtn.title = "Save pair";
-  savePairBtn.innerHTML = SAVE_ICON_SVG;
+  savePairBtn.innerHTML = `${SAVE_ICON_SVG}<span>Save</span>`;
   savePairBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     onSavePair?.(savePairBtn);
@@ -204,7 +204,7 @@ export function makeGroupCard(group, { index = 0, onChange, onRemove, onPrompt, 
   loadPairBtn.type = "button";
   loadPairBtn.className = "pc-pair-load-btn";
   loadPairBtn.title = "Load pair";
-  loadPairBtn.innerHTML = LOAD_ICON_SVG;
+  loadPairBtn.innerHTML = `${LOAD_ICON_SVG}<span>Load</span>`;
   loadPairBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     onLoadPair?.(loadPairBtn);

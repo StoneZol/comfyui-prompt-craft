@@ -347,18 +347,21 @@ const CSS = `
 
 .pc-pair-save-btn,
 .pc-pair-load-btn {
-  flex: 0 0 28px;
-  width: 28px;
+  flex: 0 0 auto;
   height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
+  padding: 0 8px;
   border: 1px solid transparent;
   border-radius: 6px;
+  font-family: inherit;
+  font-size: 11px;
+  white-space: nowrap;
   background: transparent;
   color: var(--descrip-text, #888);
   cursor: pointer;
-  padding: 0;
 }
 
 .pc-pair-save-btn:hover,
