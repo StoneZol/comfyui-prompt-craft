@@ -1,4 +1,4 @@
-"""HTTP routes for the Prompt Craft preset library."""
+"""HTTP routes for the Prompt Concatenate Pro preset library."""
 
 from aiohttp import web
 from server import PromptServer

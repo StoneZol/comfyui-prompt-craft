@@ -1,8 +1,8 @@
 {
   "extension_name": "prompt.craft",
   "node_class": "PromptCraft",
-  "node_display_name": "Prompt Craft",
+  "node_display_name": "Prompt Concatenate Pro",
   "style_id": "prompt-craft-styles",
-  "log_prefix": "[PromptCraft]",
+  "log_prefix": "[PromptConcatenatePro]",
   "debug_join": false
 }

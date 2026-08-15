@@ -1,4 +1,4 @@
-"""Prompt Craft — stack prompt groups and join positive / negative strings."""
+"""Prompt Concatenate Pro — stack prompt groups and join positive / negative strings."""
 
 import json
 import re
@@ -66,8 +66,8 @@ class PromptCraft:
         negatives = [block.get("negative", "") for block in blocks if block.get("enabled", True) is not False]
         str_pos = _join_fields(positives, DEFAULT_SEPARATOR)
         str_neg = _join_fields(negatives, DEFAULT_SEPARATOR)
-        print(f"[PromptCraft] str_pos ({len(str_pos)}): {str_pos!r}")
-        print(f"[PromptCraft] str_neg ({len(str_neg)}): {str_neg!r}")
+        print(f"[PromptConcatenatePro] str_pos ({len(str_pos)}): {str_pos!r}")
+        print(f"[PromptConcatenatePro] str_neg ({len(str_neg)}): {str_neg!r}")
         return (str_pos, str_neg)
 
 
@@ -76,5 +76,5 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "PromptCraft": "Prompt Craft",
+    "PromptCraft": "Prompt Concatenate Pro",
 }

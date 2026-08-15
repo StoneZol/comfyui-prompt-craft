@@ -1,4 +1,4 @@
-# Prompt Craft
+# Prompt Concatenate Pro
 
 **Modular prompts for ComfyUI — stack blocks, pin fields, reuse pairs, ship looks.**
 
@@ -8,13 +8,13 @@ Built-in **SQLite library**: save **layout presets** (slot stacks), save **promp
 
 MIT — see [LICENSE](LICENSE) © StoneZol
 
-![Prompt Craft node with groups](docs/screenshots/0.png)
+![Prompt Concatenate Pro node with groups](docs/screenshots/0.png)
 
 ---
 
-## Why Prompt Craft?
+## Why Prompt Concatenate Pro?
 
-| Without                                        | With Prompt Craft                                  |
+| Without                                        | With Prompt Concatenate Pro                                  |
 | ---------------------------------------------- | -------------------------------------------------- |
 | One giant positive string                      | Named blocks you can enable/disable                |
 | Re-paste the same skin/lighting every workflow | Save & load pairs from a library                   |
@@ -45,7 +45,7 @@ MIT — see [LICENSE](LICENSE) © StoneZol
 
 2. Restart ComfyUI (or refresh the browser after a hot reload).
 
-3. Add node: **`Prompt Craft`** (category `prompt_craft`).
+3. Add node: **`Prompt Concatenate Pro`** (category `prompt_craft`).
 
 No pip dependencies — Python 3.8+ stdlib + SQLite only.
 
@@ -53,7 +53,7 @@ No pip dependencies — Python 3.8+ stdlib + SQLite only.
 
 ## Quick start
 
-1. Add **Prompt Craft** to your graph.
+1. Add **Prompt Concatenate Pro** to your graph.
 2. **Add group** — name it (`skin`, `lighting`, …), fill positive / negative.
 3. Connect **`str_pos`** → CLIP Text Encode (positive), **`str_neg`** as needed.
 4. **Save preset** — snapshot your current slot layout (names + order).
@@ -161,7 +161,7 @@ localStorage.setItem("pc-debug-join", "1"); // on
 localStorage.setItem("pc-debug-join", "0"); // off
 ```
 
-Python also logs joined strings when the node executes (`[PromptCraft] str_pos …` in the terminal).
+Python also logs joined strings when the node executes (`[PromptConcatenatePro] str_pos …` in the terminal).
 
 Set `"debug_join": false` before release if you don't need it.
 
@@ -170,7 +170,7 @@ Set `"debug_join": false` before release if you don't need it.
 ## Known issues
 
 - **Vue Nodes 2.0** — toggling Vue mode can briefly leave duplicate layout glitches on the canvas; refresh the page to heal. Layout data in the widget is unaffected.
-- **Two installs** — ComfyUI loads every folder in `custom_nodes`. If Prompt Craft is there twice (for example a git clone **and** a Manager/registry install), you get two nodes, two `presets.sqlite` files, and HTTP routes registered from whichever copy loaded first. Keep a single folder.
+- **Two installs** — ComfyUI loads every folder in `custom_nodes`. If Prompt Concatenate Pro is there twice (for example a git clone **and** a Manager/registry install), you get two nodes, two `presets.sqlite` files, and HTTP routes registered from whichever copy loaded first. Keep a single folder.
 
 ---
 
@@ -194,8 +194,8 @@ comfyui-prompt-craft/
 ## Links
 
 - Repository: https://github.com/StoneZol/comfyui-prompt-craft
-- ComfyUI Registry: install via **Manager** → search **Prompt Craft**
+- ComfyUI Registry: install via **Manager** → search **Prompt Concatenate Pro**
 
 ---
 
-**If Prompt Craft saves you time, star the repo — it helps others find it.**
+**If Prompt Concatenate Pro saves you time, star the repo — it helps others find it.**
