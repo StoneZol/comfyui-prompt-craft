@@ -6,7 +6,7 @@ One node replaces the endless scroll of concatenated text widgets. Split your pr
 
 Built-in **SQLite library**: save **layout presets** (slot stacks), save **prompt pairs** per collection, and manage everything from a single **Library manager** — no more copy-paste archaeology.
 
-MIT — see [LICENSE](LICENSE) © StoneZol
+MIT — see [LICENSE](LICENSE) © StoneZol · [Changelog](changelog/CHANGELOG.md)
 
 ![Prompt Concatenate Pro node with groups](docs/screenshots/0.png)
 
@@ -25,9 +25,10 @@ MIT — see [LICENSE](LICENSE) © StoneZol
 
 ## Features
 
-- **Group cards** — title, positive, negative, drag reorder, priority, collapse, per-group enable toggle
+- **Group cards** — title, positive, negative, drag reorder, priority, collapse, duplicate, per-group enable toggle
 - **Join engine** — merges enabled groups with `, `, skips empty, normalizes commas and spacing
 - **Pin to sidebar** — each group's pos/neg appears in ComfyUI Inputs / Favorites (`Group | positive`, `Group | negative`)
+- **Duplicate pairs** — copy a group as `Title (2)` while Save/Load still use the base shelf (`Pose`)
 - **Layout presets (Stacks)** — save the current slot list + order; optional folder (category)
 - **Prompt pairs** — save/load pos+neg per **collection** (e.g. shelf named after the slot)
 - **Library manager** — rename, move, delete stacks & prompts; edit full prompt text in a centered editor
@@ -186,6 +187,8 @@ comfyui-prompt-craft/
 ├── js/
 │   ├── prompt_craft.js   # Node UI entry
 │   └── pc/               # Dialogs, manager, API client
+├── changelog/
+│   └── CHANGELOG.md      # Release notes
 └── docs/screenshots/     # README images
 ```
 
@@ -194,6 +197,7 @@ comfyui-prompt-craft/
 ## Links
 
 - Repository: https://github.com/StoneZol/comfyui-prompt-craft
+- Changelog: [changelog/CHANGELOG.md](changelog/CHANGELOG.md)
 - ComfyUI Registry: install via **Manager** → search **Prompt Concatenate Pro**
 
 ---

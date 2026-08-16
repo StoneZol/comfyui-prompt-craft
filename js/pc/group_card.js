@@ -1,4 +1,4 @@
-import { CHEVRON_ICON_SVG, GRIP_ICON_SVG, LOAD_ICON_SVG, SAVE_ICON_SVG, TRASH_ICON_SVG } from "./icons.js";
+import { CHEVRON_ICON_SVG, COPY_ICON_SVG, GRIP_ICON_SVG, LOAD_ICON_SVG, SAVE_ICON_SVG, TRASH_ICON_SVG } from "./icons.js";
 import { openConfirmPopup } from "./popup.js";
 
 function isEnabled(group) {
@@ -28,7 +28,7 @@ function makeField(group, key, labelText, { onChange, onPrompt }) {
   return { wrap, area };
 }
 
-export function makeGroupCard(group, { index = 0, onChange, onRemove, onPrompt, onRename, onReorder, onDrop, onSavePair, onLoadPair }) {
+export function makeGroupCard(group, { index = 0, onChange, onRemove, onPrompt, onRename, onReorder, onDrop, onSavePair, onLoadPair, onDuplicate }) {
   const card = document.createElement("div");
   card.className = "pc-group";
   card.dataset.groupId = group.id;
@@ -145,6 +145,16 @@ export function makeGroupCard(group, { index = 0, onChange, onRemove, onPrompt, 
   });
   title.addEventListener("blur", commitTitle);
 
+  const copyBtn = document.createElement("button");
+  copyBtn.type = "button";
+  copyBtn.className = "pc-copy-btn";
+  copyBtn.title = "Duplicate pair";
+  copyBtn.innerHTML = COPY_ICON_SVG;
+  copyBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    onDuplicate?.();
+  });
+
   const collapseBtn = document.createElement("button");
   collapseBtn.type = "button";
   collapseBtn.className = "pc-collapse-btn";
@@ -164,7 +174,7 @@ export function makeGroupCard(group, { index = 0, onChange, onRemove, onPrompt, 
     onChange?.();
   });
 
-  head.append(dragHandle, priority, toggle, title, collapseBtn);
+  head.append(dragHandle, priority, toggle, title, copyBtn, collapseBtn);
 
   const body = document.createElement("div");
   body.className = "pc-group-body";

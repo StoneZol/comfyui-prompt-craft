@@ -1,5 +1,6 @@
 import { openConfirmPopup, openPopup } from "./popup.js";
 import { listCategories, savePreset, shelfNames } from "./api.js";
+import { baseShelfName } from "./titles.js";
 
 function matchesCategory(name, query) {
   if (!query) return true;
@@ -63,7 +64,7 @@ function openCategoryPicker({ anchor, categories, current, onPick, onClose }) {
 }
 
 export function openSavePairPopup({ anchor, group }) {
-  const defaultCategory = (group?.title || "").trim();
+  const defaultCategory = baseShelfName(group?.title);
   const positive = group?.positive || "";
   const negative = group?.negative || "";
 

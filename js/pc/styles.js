@@ -286,7 +286,8 @@ const CSS = `
   display: none;
 }
 
-.pc-collapse-btn {
+.pc-collapse-btn,
+.pc-copy-btn {
   flex: 0 0 28px;
   width: 28px;
   height: 28px;
@@ -301,16 +302,21 @@ const CSS = `
   padding: 0;
 }
 
-.pc-collapse-btn:hover {
+.pc-collapse-btn:hover,
+.pc-copy-btn:hover {
   color: var(--input-text, #ddd);
   background: var(--comfy-input-bg, #2a2a2e);
   border-color: var(--border-color, #444);
 }
 
-.pc-collapse-btn svg {
+.pc-collapse-btn svg,
+.pc-copy-btn svg {
   width: 14px;
   height: 14px;
   display: block;
+}
+
+.pc-collapse-btn svg {
   transition: transform 0.15s ease;
 }
 

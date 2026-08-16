@@ -16,6 +16,7 @@ import {
   parseShadowFieldName,
 } from "./pc/shadow_fields.js";
 import { craftOutput, isJoinDebugEnabled } from "./pc/join.js";
+import { baseShelfName, nextDuplicateTitle } from "./pc/titles.js";
 
 const config = await loadConfig();
 injectStyles(config.style_id);
@@ -346,7 +347,7 @@ app.registerExtension({
             onLoadPair: (anchor) => {
               openLoadPairPopup({
                 anchor,
-                category: group.title,
+                category: baseShelfName(group.title),
                 onPick: (preset) => {
                   const apply = () => {
                     group.positive = preset.positive || "";
@@ -365,6 +366,7 @@ app.registerExtension({
                 },
               });
             },
+            onDuplicate: () => duplicateGroup(group),
           });
           cards.set(group.id, card);
           groupsWrap.appendChild(card.el);
@@ -402,6 +404,28 @@ app.registerExtension({
         fillDom();
         hideDataWidget(dataWidget);
         return "";
+      }
+
+      function duplicateGroup(source) {
+        collectFromShadows();
+        const name = nextDuplicateTitle(groups, source.title);
+        const group = {
+          id: newGroupId(),
+          title: name,
+          positive: source.positive || "",
+          negative: source.negative || "",
+          enabled: source.enabled !== false,
+          collapsed: false,
+          ...stampLabels(name),
+        };
+        const index = groups.findIndex((item) => item.id === source.id);
+        if (index < 0) groups.push(group);
+        else groups.splice(index + 1, 0, group);
+        persist();
+        addShadows(group);
+        renderCards();
+        fillDom();
+        hideDataWidget(dataWidget);
       }
 
       function removeGroup(id) {
