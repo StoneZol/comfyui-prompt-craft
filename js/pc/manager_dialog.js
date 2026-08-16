@@ -152,6 +152,7 @@ function makeFolderSection({
   canManageFolder,
   onRenameFolder,
   onDeleteFolder,
+  onToggleExpand,
   renderItem,
 }) {
   const folder = document.createElement("div");
@@ -204,10 +205,18 @@ function makeFolderSection({
     const collapsed = folder.classList.toggle("collapsed");
     toggle.title = collapsed ? "Expand" : "Collapse";
     toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    onToggleExpand?.(!collapsed);
   });
 
   folder.append(head, body);
   return folder;
+}
+
+/** Default collapsed; remember user toggles; search forces open. */
+function folderExpanded(name, { query, openMap }) {
+  if ((query || "").trim()) return true;
+  if (openMap?.has(name)) return openMap.get(name);
+  return false;
 }
 
 function makeItemRow(item, { name, meta, onEdit, onDelete }) {
@@ -539,7 +548,7 @@ function openEditPromptPopup({ preset, categories, onSaved }) {
   });
 }
 
-function paintStacksTab(listEl, { layouts, folders, showEmpty, query, reload }) {
+function paintStacksTab(listEl, { layouts, folders, showEmpty, query, openMap, reload }) {
   listEl.replaceChildren();
   const q = query.trim().toLowerCase();
 
@@ -594,9 +603,9 @@ function paintStacksTab(listEl, { layouts, folders, showEmpty, query, reload }) 
       makeFolderSection({
         title: folderName,
         items,
-        expanded:
-          folderName.toLowerCase() === UNCATEGORISED.toLowerCase() || Boolean(q) || (showEmpty && !items.length),
+        expanded: folderExpanded(folderName, { query: q, openMap }),
         canManageFolder: folderName.toLowerCase() !== UNCATEGORISED.toLowerCase(),
+        onToggleExpand: (open) => openMap?.set(folderName, open),
         onRenameFolder: (btn) => {
           mgrInput({
             anchor: btn,
@@ -609,7 +618,8 @@ function paintStacksTab(listEl, { layouts, folders, showEmpty, query, reload }) 
               return "";
             },
             onSubmit: async (value) => {
-              const result = await renameLayoutFolder({ name: folderName, newName: value.trim() });
+              const next = value.trim();
+              const result = await renameLayoutFolder({ name: folderName, newName: next });
               if (!result.ok) {
                 mgrConfirm({
                   anchor: btn,
@@ -620,6 +630,10 @@ function paintStacksTab(listEl, { layouts, folders, showEmpty, query, reload }) 
                   danger: false,
                 });
                 return;
+              }
+              if (openMap?.has(folderName)) {
+                openMap.set(next, openMap.get(folderName));
+                openMap.delete(folderName);
               }
               reload();
             },
@@ -693,7 +707,7 @@ function paintStacksTab(listEl, { layouts, folders, showEmpty, query, reload }) 
   }
 }
 
-function paintPromptsTab(listEl, { presets, categories, showEmpty, query, reload }) {
+function paintPromptsTab(listEl, { presets, categories, showEmpty, query, openMap, reload }) {
   listEl.replaceChildren();
   const q = query.trim().toLowerCase();
 
@@ -743,8 +757,9 @@ function paintPromptsTab(listEl, { presets, categories, showEmpty, query, reload
       makeFolderSection({
         title: categoryName,
         items,
-        expanded: Boolean(q) || items.length <= 6 || (showEmpty && !items.length),
+        expanded: folderExpanded(categoryName, { query: q, openMap }),
         canManageFolder: true,
+        onToggleExpand: (open) => openMap?.set(categoryName, open),
         onRenameFolder: (btn) => {
           mgrInput({
             anchor: btn,
@@ -757,7 +772,8 @@ function paintPromptsTab(listEl, { presets, categories, showEmpty, query, reload
               return "";
             },
             onSubmit: async (value) => {
-              const result = await renameCategory({ name: categoryName, newName: value.trim() });
+              const next = value.trim();
+              const result = await renameCategory({ name: categoryName, newName: next });
               if (!result.ok) {
                 mgrConfirm({
                   anchor: btn,
@@ -768,6 +784,10 @@ function paintPromptsTab(listEl, { presets, categories, showEmpty, query, reload
                   danger: false,
                 });
                 return;
+              }
+              if (openMap?.has(categoryName)) {
+                openMap.set(next, openMap.get(categoryName));
+                openMap.delete(categoryName);
               }
               reload();
             },
@@ -896,6 +916,8 @@ export function openManagerPopup({ anchor }) {
       let presets = [];
       let folders = [];
       let categories = [];
+      const stacksOpen = new Map();
+      const promptsOpen = new Map();
 
       function setActiveTab(next) {
         mode = next;
@@ -913,6 +935,7 @@ export function openManagerPopup({ anchor }) {
             folders,
             showEmpty,
             query: search.value,
+            openMap: stacksOpen,
             reload: loadStacks,
           });
           return;
@@ -922,6 +945,7 @@ export function openManagerPopup({ anchor }) {
           categories,
           showEmpty,
           query: search.value,
+          openMap: promptsOpen,
           reload: loadPrompts,
         });
       }

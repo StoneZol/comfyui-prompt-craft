@@ -54,7 +54,7 @@ class PromptCraft:
     RETURN_TYPES = ("STRING", "STRING")
     RETURN_NAMES = ("str_pos", "str_neg")
     FUNCTION = "craft"
-    CATEGORY = "prompt_craft"
+    CATEGORY = "Prompt Concatenate Pro"
 
     @classmethod
     def IS_CHANGED(cls, blocks_data, **kwargs):

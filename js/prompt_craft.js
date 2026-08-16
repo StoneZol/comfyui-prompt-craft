@@ -132,7 +132,7 @@ app.registerExtension({
       const saveBtn = document.createElement("button");
       saveBtn.type = "button";
       saveBtn.className = "pc-save-btn";
-      saveBtn.innerHTML = `${SAVE_ICON_SVG}<span>Save presets</span>`;
+      saveBtn.innerHTML = `${SAVE_ICON_SVG}<span>Save preset</span>`;
 
       const loadBtn = document.createElement("button");
       loadBtn.type = "button";

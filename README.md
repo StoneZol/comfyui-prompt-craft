@@ -46,7 +46,7 @@ MIT — see [LICENSE](LICENSE) © StoneZol · [Changelog](changelog/CHANGELOG.md
 
 2. Restart ComfyUI (or refresh the browser after a hot reload).
 
-3. Add node: **`Prompt Concatenate Pro`** (category `prompt_craft`).
+3. Add node: **`Prompt Concatenate Pro`** (same folder name in the node picker).
 
 No pip dependencies — Python 3.8+ stdlib + SQLite only.
 
@@ -65,7 +65,7 @@ No pip dependencies — Python 3.8+ stdlib + SQLite only.
 
 Snapshot the current slots (`Skin · Bg · Light`) into a named stack, optionally in a folder.
 
-![Save presets dialog](docs/screenshots/1.png)
+![Save preset dialog](docs/screenshots/1.png)
 
 ### Save a prompt pair
 

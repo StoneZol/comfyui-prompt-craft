@@ -6,6 +6,19 @@ Format: newest first.
 
 ---
 
+## [1.1.1] — 2026-08-16
+
+### Library manager folders stay readable
+
+With many collections open at once the list was hard to scan, and any reload (delete / rename) forced everything open again.
+
+- Folders and collections default to **collapsed**
+- Expand/collapse is remembered while the manager stays open
+- Delete, rename, and list refresh no longer re-expand everything you closed
+- Search still temporarily opens matching sections; clearing the query restores your fold state
+
+---
+
 ## [1.1.0] — 2026-08-16
 
 ### Duplicate pair on the node

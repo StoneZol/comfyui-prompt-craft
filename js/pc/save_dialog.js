@@ -71,7 +71,7 @@ export function openSavePresetsPopup({ anchor, groups }) {
   if (!slots.length) {
     openConfirmPopup({
       anchor,
-      title: "Save presets",
+      title: "Save preset",
       message: "Add a group first.",
       confirmLabel: "OK",
       showCancel: false,
@@ -82,7 +82,7 @@ export function openSavePresetsPopup({ anchor, groups }) {
 
   return openPopup({
     anchor,
-    title: "Save presets",
+    title: "Save preset",
     width: 320,
     render(body, { close }) {
       const hint = document.createElement("div");
