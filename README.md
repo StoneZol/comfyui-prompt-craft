@@ -41,7 +41,7 @@ MIT — see [LICENSE](LICENSE) © StoneZol · [Changelog](changelog/CHANGELOG.md
 1. Clone into `ComfyUI/custom_nodes/`:
 
     ```bash
-    git clone https://github.com/StoneZol/comfyui-prompt-craft.git
+    git clone https://github.com/StoneZol/prompt-concatenate-pro.git
     ```
 
 2. Restart ComfyUI (or refresh the browser after a hot reload).
@@ -178,7 +178,7 @@ Set `"debug_join": false` before release if you don't need it.
 ## File layout
 
 ```
-comfyui-prompt-craft/
+prompt-concatenate-pro/
 ├── nodes.py              # Join logic, PromptCraft node
 ├── routes.py             # REST API for library
 ├── db/
@@ -196,7 +196,7 @@ comfyui-prompt-craft/
 
 ## Links
 
-- Repository: https://github.com/StoneZol/comfyui-prompt-craft
+- Repository: https://github.com/StoneZol/prompt-concatenate-pro
 - Changelog: [changelog/CHANGELOG.md](changelog/CHANGELOG.md)
 - ComfyUI Registry: install via **Manager** → search **Prompt Concatenate Pro**
 

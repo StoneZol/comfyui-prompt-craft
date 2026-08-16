@@ -1,17 +1,17 @@
 [project]
 name = "comfyui-prompt-craft"
 description = "Stop wrestling with megaprompts. Stack modular blocks (skin, light, outfit…) into clean strPos/strNeg, pin fields to the sidebar, and reuse prompts from a built-in SQLite library — layouts, pairs, and a full manager included."
-version = "1.1.1"
+version = "1.1.2"
 license = { file = "LICENSE" }
 requires-python = ">=3.8"
 dependencies = []
 
 [project.urls]
-Repository = "https://github.com/StoneZol/comfyui-prompt-craft"
-"Bug Tracker" = "https://github.com/StoneZol/comfyui-prompt-craft/issues"
+Repository = "https://github.com/StoneZol/prompt-concatenate-pro"
+"Bug Tracker" = "https://github.com/StoneZol/prompt-concatenate-pro/issues"
 
 [tool.comfy]
 PublisherId = "stone-zol"
 DisplayName = "Prompt Concatenate Pro"
 Icon = ""
-Banner = "https://raw.githubusercontent.com/StoneZol/comfyui-prompt-craft/main/docs/img/prev.png"
+Banner = "https://raw.githubusercontent.com/StoneZol/prompt-concatenate-pro/main/docs/img/prev.png"
